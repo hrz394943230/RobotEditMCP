@@ -1,0 +1,268 @@
+{
+  "drafts": [
+    {
+      "tempId": 4,
+      "draft": {
+        "name": "RobotMarkIDraftSetting",
+        "scene": "DRIVE",
+        "settingName": "ApiFoxMarkI",
+        "config": {
+          "tool_set": [],
+          "exception_tips": {
+            "error_suffix": "请注意，你的回复我将用于Python的函数执行，所以尽量回复一个Python可以处理的内容，比如json字符串，而不要回复一些描述性的话语。",
+            "tool_not_found": "未找到对应工具，是否可以换其它工具试一下？",
+            "extraction_error": "从如上信息中描述的内容中提取工具和参数时出现了错误，错误信息如下：\n"
+          },
+          "dock_tools": [],
+          "top_k": 5
+        }
+      }
+    },
+    {
+      "tempId": 2,
+      "draft": {
+        "name": "RobotDraftSetting",
+        "scene": "ROBOT",
+        "settingName": "ApiFoxRobot",
+        "config": {
+          "nick_name": "ApiFoxTiny",
+          "brain": {
+            "setting_id": 3,
+            "category": "Draft"
+          },
+          "drive": {
+            "setting_id": 4,
+            "category": "Draft"
+          },
+          "lock_timeout": 1800,
+          "wait_processing_timeout": 20
+        }
+      }
+    },
+    {
+      "tempId": 7,
+      "draft": {
+        "name": "PostgresDocStoreDraft",
+        "scene": "DOC_STORE",
+        "settingName": "ApiFoxDocStore",
+        "config": {
+          "name": "ApiFoxDS",
+          "description": "文件管理中心"
+        }
+      }
+    },
+    {
+      "tempId": 8,
+      "draft": {
+        "name": "PGInjectedConversationManagerDraftSetting",
+        "scene": "CONVERSATION_MANAGER",
+        "settingName": "ApiFoxCM",
+        "config": {
+          "platform_id": 1
+        }
+      }
+    },
+    {
+      "tempId": 5,
+      "draft": {
+        "name": "AIMemoryDraftSetting",
+        "scene": "MEMORY",
+        "settingName": "ApiFoxMemory",
+        "config": {
+          "docs": {
+            "setting_id": 7,
+            "category": "Draft"
+          },
+          "conversation_manager": {
+            "setting_id": 8,
+            "category": "Draft"
+          },
+          "memos": null,
+          "knowledge": null,
+          "recall_strict": false,
+          "top_k": 20,
+          "kg_format": "tfrobot",
+          "enable_kg_query_expansion": true
+        }
+      }
+    },
+    {
+      "tempId": 19,
+      "draft": {
+        "name": "附加信息提示词草稿",
+        "scene": "PROMPT",
+        "settingName": "文档审核DCChain 提示词",
+        "config": {
+          "template": {
+            "setting_id": 20,
+            "category": "Draft"
+          },
+          "tips": null,
+          "always_render": true
+        }
+      }
+    },
+    {
+      "tempId": 16,
+      "draft": {
+        "name": "附加信息提示词草稿",
+        "scene": "PROMPT",
+        "settingName": "文档审核系统 prompt",
+        "config": {
+          "template": {
+            "setting_id": 17,
+            "category": "Draft"
+          },
+          "tips": null,
+          "always_render": true
+        }
+      }
+    },
+    {
+      "tempId": 17,
+      "draft": {
+        "name": "FStrTemplateDraft",
+        "scene": "PROMPT_TEMPLATE",
+        "settingName": "文档审核系统提示词",
+        "config": {
+          "templates": {
+            "zh": "你现在作为一个专业的文档审核管理员,需要利用 word 编辑工具(office4ai)对文档进行审核,你的审核标准如下: 营业厅宽带办理规定 一、审核标准（营业厅宽带办理业务规范） 本规范基于全国宽带业务统一标准，结合营业厅线下办理场景制定，适用于营业厅所有个人及家庭宽带新装、续装、移机、销户等业务，核心条款如下： 1. 办理条件与身份核验规范 •\t个人办理：需机主本人携带有效身份证原件到场，工作人员核对身份信息无误后，方可受理业务，严禁仅凭身份证复印件或照片办理。 •\t代办办理：需代办人携带本人有效身份证原件、机主有效身份证原件及机主签署的书面授权委托书，经工作人员核验无误后受理，缺一不可。 •\t单位办理：需经办人携带企业营业执照副本、经办人身份证原件及企业授权委托书，到指定营业厅办理，线上渠道不受理单位宽带业务。 2. 办理材料规范 •\t新装业务：核心材料为机主身份证原件；若办理融合宽带（绑定手机号），需额外提供绑定手机号的机主身份证明（与宽带机主一致）。 •\t移机业务：需提供机主身份证原件、宽带账号，移机目标地址需为山西移动宽带已覆盖区域，工作人员需提前核实覆盖情况。 •\t销户业务：需机主本人到场，提供身份证原件、宽带租赁设备（光猫、机顶盒及相关配件），核实无欠费、无未到期合约后，方可办理销户。 3. 业务办理流程规范 •\t咨询告知：工作人员需主动向客户说明宽带套餐资费、合约期限、装机费用、设备租赁规则及违约条款，确保客户知晓并确认。 •\t申请受理：核对客户身份及材料无误后，录入业务系统，生成业务受理单，由客户签字确认后，方可进入后续流程。 •\t装机安排：业务受理后，原则上72小时内完成上门装机（特殊偏远区域可延长至5个工作日，需提前告知客户并征得同意），装机前需与客户二次确认上门时间。 •\t装机核验：上门装机时，需再次核实机主身份，完成安装调试后，由客户签字确认装机完成，工作人员需清理现场，并告知客户基础使用方法及售后联系方式。 4. 资费与设备规范 •\t装机费用：宽带新装机需收取一次性装机工料费（具体标准以营业厅公示为准），融合套餐可享受装机费优惠，优惠政策需明确公示，严禁隐形收费。 •\t设备管理：光猫、机顶盒等设备所有权归山西移动所有，客户租赁使用，销户时需完好归还，若设备遗失或损坏，需按规定缴纳补偿款（光猫250元/套、机顶盒220元/套）。 •\t合约规则：合约期内销户需缴纳违约金（具体标准按合约约定执行），合约到期后未续费的，宽带自动停机，不产生额外费用。 5. 服务时限规范 •\t业务受理时限：客户材料齐全、身份核验无误的，营业厅需当场完成受理，不得无故拖延。 •\t装机时限：已具备线路条件的区域，72小时内完成装机；不具备线路条件的，需在2个工作日内告知客户，说明施工周期或无法安装原因。 •\t故障处理时限：客户反馈宽带故障后，8小时内响应，24小时内完成故障处理（特殊故障除外，需提前告知客户）。 3.\t服务体验，不符合服务时限要求。 你可以先获取工具的列表,按照工具的使用要求来进行工具调用的编排,常用的工具一般先使用打开文档的工具,获取文档的内容,然后根据用户的需求,再编排工具的调用 要根据用户的要求,将不符合标准的地方进行对应处理."
+          },
+          "active_language": "zh",
+          "params_schema": null
+        }
+      }
+    },
+    {
+      "tempId": 9,
+      "draft": {
+        "name": "GPT草稿",
+        "scene": "LLM",
+        "settingName": "ApiFoxGPT",
+        "config": {
+          "input_price": 0.1,
+          "output_price": 0,
+          "name": "gpt-5.2",
+          "context_window": null,
+          "system_msg_prompt": [
+            {
+              "setting_id": 16,
+              "category": "Draft"
+            }
+          ],
+          "before_input_msg_prompt": [],
+          "after_input_msg_prompt": [],
+          "after_intermediate_msg_prompt": [],
+          "tool_filter": null,
+          "frequency_penalty": 0,
+          "logit_bias": null,
+          "max_tokens": null,
+          "top_p": 1,
+          "n": 1,
+          "presence_penalty": 0,
+          "response_format": {
+            "type": "text"
+          },
+          "seed": null,
+          "stop": null,
+          "stream": false,
+          "temperature": 1,
+          "tool_choice": null,
+          "tool_params_strict": null,
+          "user": null,
+          "openai_api_key": "sk-6xrRfon337oKXALaaVTqatN5cIWhUU0xOUZq8D7Y5vi6bGOC",
+          "proxy_host": null,
+          "proxy_port": null,
+          "proxy_user": null,
+          "proxy_pass": null
+        }
+      }
+    },
+    {
+      "tempId": 6,
+      "draft": {
+        "name": "思维链草稿(ChainDraft)",
+        "scene": "CHAIN",
+        "settingName": "审核思维链",
+        "config": {
+          "abilities_purpose": null,
+          "llm": {
+            "setting_id": 9,
+            "category": "Draft"
+          },
+          "max_iterations": 10,
+          "max_tokens": 128000,
+          "tool_response_instructions": "有些工具会以Iterator迭代器的形式持续返回，如果你已经解决完问题或者已经拿到自己需要的信息，可以调用Stop相关工具将其关闭",
+          "response_schema": null,
+          "tags": [],
+          "tool_retrieval_components": [
+            "external",
+            "tags"
+          ]
+        }
+      }
+    },
+    {
+      "tempId": 18,
+      "draft": {
+        "name": "分治思维链草稿(DCChainDraft)",
+        "scene": "CHAIN",
+        "settingName": "文档审核思维链",
+        "config": {
+          "abilities_purpose": "专业文档审核管理员帮助用户审核,编辑文档",
+          "llm": {
+            "setting_id": 9,
+            "category": "Draft"
+          },
+          "max_iterations": 10,
+          "max_tokens": 128000,
+          "tool_response_instructions": "有些工具会以Iterator迭代器的形式持续返回，如果你已经解决完问题或者已经拿到自己需要的信息，可以调用Stop相关工具将其关闭",
+          "output_schema": null,
+          "split_subtask_llm": "chat::gpt::gpt-4o",
+          "split_subtask_prompt": [
+            {
+              "setting_id": 19,
+              "category": "Draft"
+            }
+          ],
+          "wrap_input_prompt": null,
+          "progress_tips_prompt": null
+        }
+      }
+    },
+    {
+      "tempId": 20,
+      "draft": {
+        "name": "FStrTemplateDraft",
+        "scene": "PROMPT_TEMPLATE",
+        "settingName": "文档审核 DCChain 提示词模板",
+        "config": {
+          "templates": {
+            "zh": "你现在作为一个专业的文档审核管理员,需要利用 word 编辑工具(office4ai)对文档进行审核,你的审核标准如下: 营业厅宽带办理规定 一、审核标准（营业厅宽带办理业务规范） 本规范基于全国宽带业务统一标准，结合营业厅线下办理场景制定，适用于营业厅所有个人及家庭宽带新装、续装、移机、销户等业务，核心条款如下： 1. 办理条件与身份核验规范 •\t个人办理：需机主本人携带有效身份证原件到场，工作人员核对身份信息无误后，方可受理业务，严禁仅凭身份证复印件或照片办理。 •\t代办办理：需代办人携带本人有效身份证原件、机主有效身份证原件及机主签署的书面授权委托书，经工作人员核验无误后受理，缺一不可。 •\t单位办理：需经办人携带企业营业执照副本、经办人身份证原件及企业授权委托书，到指定营业厅办理，线上渠道不受理单位宽带业务。 2. 办理材料规范 •\t新装业务：核心材料为机主身份证原件；若办理融合宽带（绑定手机号），需额外提供绑定手机号的机主身份证明（与宽带机主一致）。 •\t移机业务：需提供机主身份证原件、宽带账号，移机目标地址需为山西移动宽带已覆盖区域，工作人员需提前核实覆盖情况。 •\t销户业务：需机主本人到场，提供身份证原件、宽带租赁设备（光猫、机顶盒及相关配件），核实无欠费、无未到期合约后，方可办理销户。 3. 业务办理流程规范 •\t咨询告知：工作人员需主动向客户说明宽带套餐资费、合约期限、装机费用、设备租赁规则及违约条款，确保客户知晓并确认。 •\t申请受理：核对客户身份及材料无误后，录入业务系统，生成业务受理单，由客户签字确认后，方可进入后续流程。 •\t装机安排：业务受理后，原则上72小时内完成上门装机（特殊偏远区域可延长至5个工作日，需提前告知客户并征得同意），装机前需与客户二次确认上门时间。 •\t装机核验：上门装机时，需再次核实机主身份，完成安装调试后，由客户签字确认装机完成，工作人员需清理现场，并告知客户基础使用方法及售后联系方式。 4. 资费与设备规范 •\t装机费用：宽带新装机需收取一次性装机工料费（具体标准以营业厅公示为准），融合套餐可享受装机费优惠，优惠政策需明确公示，严禁隐形收费。 •\t设备管理：光猫、机顶盒等设备所有权归山西移动所有，客户租赁使用，销户时需完好归还，若设备遗失或损坏，需按规定缴纳补偿款（光猫250元/套、机顶盒220元/套）。 •\t合约规则：合约期内销户需缴纳违约金（具体标准按合约约定执行），合约到期后未续费的，宽带自动停机，不产生额外费用。 5. 服务时限规范 •\t业务受理时限：客户材料齐全、身份核验无误的，营业厅需当场完成受理，不得无故拖延。 •\t装机时限：已具备线路条件的区域，72小时内完成装机；不具备线路条件的，需在2个工作日内告知客户，说明施工周期或无法安装原因。 •\t故障处理时限：客户反馈宽带故障后，8小时内响应，24小时内完成故障处理（特殊故障除外，需提前告知客户）。 3.\t服务体验，不符合服务时限要求。 你可以先获取工具的列表,按照工具的使用要求来进行工具调用的编排,常用的工具一般先使用打开文档的工具,获取文档的内容,然后根据用户的需求,再编排工具的调用 要根据用户的要求,将不符合标准的地方进行对应处理."
+          },
+          "active_language": "zh",
+          "params_schema": null
+        }
+      }
+    },
+    {
+      "tempId": 3,
+      "draft": {
+        "name": "RobotBrainDraftSetting",
+        "scene": "BRAIN",
+        "settingName": "ApiFoxBrain",
+        "config": {
+          "chain": {
+            "setting_id": 18,
+            "category": "Draft"
+          },
+          "memory": {
+            "setting_id": 5,
+            "category": "Draft"
+          },
+          "memory_chunk_size": 2048
+        }
+      }
+    }
+  ]
+}
