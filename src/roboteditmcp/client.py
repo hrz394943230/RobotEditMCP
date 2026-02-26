@@ -50,9 +50,11 @@ class RobotClient:
         logger.info(f"RobotClient initialized with base_url: {self.base_url}")
 
     def _get_headers(self) -> dict[str, str]:
-        """Get request headers with admin_key authentication."""
+        """Get request headers with admin_key authentication and additional headers."""
         return {
             "admin_key": self.admin_token,
+            "tfNamespace": config.TF_NAMESPACE,
+            "tfRobotId": config.TF_ROBOT_ID,
             "Content-Type": "application/json",
         }
 

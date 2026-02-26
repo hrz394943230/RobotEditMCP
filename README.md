@@ -46,9 +46,13 @@ RobotEditMCP requires environment variables for authentication and API access:
 Create a `.env` file in your project root:
 
 ```bash
-# Required
+# Required - API authentication and endpoint
 ROBOT_ADMIN_TOKEN=your_admin_token_here
 ROBOT_BASE_URL=https://api.robot.com
+
+# Required - Kubernetes network routing headers
+TF_NAMESPACE=staging-tenant
+TF_ROBOT_ID=friday
 
 # Optional
 ROBOT_LOG_LEVEL=INFO
@@ -60,11 +64,22 @@ MAX_CONNECTIONS=10
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
-| `ROBOT_ADMIN_TOKEN` | Yes | Admin API Token for Bearer authentication | - |
+| `ROBOT_ADMIN_TOKEN` | Yes | Admin API token for authentication (sent in `admin_key` header) | - |
 | `ROBOT_BASE_URL` | Yes | RobotServer base URL | - |
+| `TF_NAMESPACE` | Yes | Kubernetes namespace for Pod routing (sent in `tfNamespace` header) | - |
+| `TF_ROBOT_ID` | Yes | Robot instance identifier for K8s service discovery (sent in `tfRobotId` header) | - |
 | `ROBOT_LOG_LEVEL` | No | Log level (INFO/ERROR/DEBUG) | `INFO` |
 | `API_TIMEOUT` | No | API request timeout in seconds | `30` |
 | `MAX_CONNECTIONS` | No | Maximum HTTP connections | `10` |
+
+### Kubernetes Architecture Notes
+
+**`TF_NAMESPACE` and `TF_ROBOT_ID`** are essential headers used in the Kubernetes network layer:
+
+- **`tfNamespace`**: Identifies the K8s namespace where the Robot pods are deployed
+- **`tfRobotId`**: Identifies the specific Robot instance for service discovery and routing
+
+These headers enable proper network routing in multi-tenant K8s environments, allowing requests to reach the correct Robot pod. They are injected into every HTTP request and processed by the Kubernetes network infrastructure (e.g., Ingress, Service Mesh, or custom controllers).
 
 ## Usage
 
@@ -89,7 +104,9 @@ Add to your Claude Desktop config or MCP client configuration:
       "command": "roboteditmcp",
       "env": {
         "ROBOT_ADMIN_TOKEN": "your_token_here",
-        "ROBOT_BASE_URL": "https://api.robot.com"
+        "ROBOT_BASE_URL": "https://api.robot.com",
+        "TF_NAMESPACE": "staging-tenant",
+        "TF_ROBOT_ID": "friday"
       }
     }
   }

@@ -14,6 +14,10 @@ class Config:
     ROBOT_ADMIN_TOKEN: str = os.getenv("ROBOT_ADMIN_TOKEN", "")
     ROBOT_BASE_URL: str = os.getenv("ROBOT_BASE_URL", "")
 
+    # Additional required headers for Robot API
+    TF_NAMESPACE: str = os.getenv("TF_NAMESPACE", "")
+    TF_ROBOT_ID: str = os.getenv("TF_ROBOT_ID", "")
+
     # Logging configuration
     ROBOT_LOG_LEVEL: str = os.getenv("ROBOT_LOG_LEVEL", "INFO")
 
@@ -34,6 +38,12 @@ class Config:
 
         if not cls.ROBOT_BASE_URL:
             return False, "ROBOT_BASE_URL environment variable is required"
+
+        if not cls.TF_NAMESPACE:
+            return False, "TF_NAMESPACE environment variable is required"
+
+        if not cls.TF_ROBOT_ID:
+            return False, "TF_ROBOT_ID environment variable is required"
 
         # Validate BASE_URL format
         base_url = cls.ROBOT_BASE_URL.rstrip("/")

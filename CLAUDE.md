@@ -6,7 +6,10 @@
 
 RobotEditMCP 是一个模型上下文协议 (MCP) 服务器，为 AI Agent 提供管理 Robot 配置的工具。它通过 RESTful API 实现对草稿配置、在线（生产）配置和模板的操作。
 
-服务器使用 `admin_key` 头部认证（不是 Bearer tokens），并与 RobotServer 后端通信。
+服务器通过以下 HTTP 头部进行认证和路由：
+- `admin_key`: API 认证令牌（使用 ROBOT_ADMIN_TOKEN）
+- `tfNamespace`: Kubernetes 命名空间，用于 K8s 网络层 Pod 定位
+- `tfRobotId`: Robot 实例标识符，用于 K8s 服务发现和路由
 
 ## 常用开发命令
 
@@ -18,7 +21,11 @@ make dev             # 安装开发依赖
 
 # 从示例创建 .env 文件
 cp .env.example .env
-# 编辑 .env 文件，填入你的 ROBOT_ADMIN_TOKEN 和 ROBOT_BASE_URL
+# 编辑 .env 文件，填入必需的环境变量：
+# - ROBOT_ADMIN_TOKEN: API 认证令牌
+# - ROBOT_BASE_URL: API 基础 URL
+# - TF_NAMESPACE: Kubernetes 命名空间
+# - TF_ROBOT_ID: Robot 实例标识符
 ```
 
 ### 代码质量
@@ -67,8 +74,9 @@ make test            # 运行 pytest（目前还没有测试）
 
 **config.py**
 - 通过 `python-dotenv` 加载环境变量
-- 验证必需变量：`ROBOT_ADMIN_TOKEN`、`ROBOT_BASE_URL`
+- 验证必需变量：`ROBOT_ADMIN_TOKEN`、`ROBOT_BASE_URL`、`TF_NAMESPACE`、`TF_ROBOT_ID`
 - 可选变量：`ROBOT_LOG_LEVEL`、`API_TIMEOUT`、`MAX_CONNECTIONS`
+- `TF_NAMESPACE` 和 `TF_ROBOT_ID` 用于 Kubernetes 网络层的 Pod 定位和路由
 
 ### 工具类别（共 20 个工具）
 
