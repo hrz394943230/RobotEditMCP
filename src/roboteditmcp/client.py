@@ -41,21 +41,34 @@ class RobotClient:
         self.admin_token = config.ROBOT_ADMIN_TOKEN
         self.timeout = config.API_TIMEOUT
 
-        # Create HTTP client with connection limits
+        # Prepare cookies for authentication and K8s routing
+        cookies = {
+            "adminToken": self.admin_token,
+            "tfNamespace": config.TF_NAMESPACE,
+            "tfRobotId": config.TF_ROBOT_ID,
+        }
+
+        # Create HTTP client with connection limits and cookies
         self.client = httpx.Client(
             timeout=self.timeout,
             limits=httpx.Limits(max_connections=config.MAX_CONNECTIONS),
+            cookies=cookies,
         )
 
         logger.info(f"RobotClient initialized with base_url: {self.base_url}")
 
     def _get_headers(self) -> dict[str, str]:
-        """Get request headers with admin_key authentication and additional headers."""
+        """Get request headers."""
         return {
-            "admin_key": self.admin_token,
+            "Content-Type": "application/json",
+        }
+
+    def _get_cookies(self) -> dict[str, str]:
+        """Get request cookies for authentication and K8s routing."""
+        return {
+            "adminToken": self.admin_token,
             "tfNamespace": config.TF_NAMESPACE,
             "tfRobotId": config.TF_ROBOT_ID,
-            "Content-Type": "application/json",
         }
 
     def _handle_response(self, response: httpx.Response) -> dict:
@@ -520,7 +533,7 @@ class RobotClient:
             List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
         """
         response = self.client.get(
-            f"{self.base_url}/api/v1/metadata/scenes",
+            f"{self.base_url}/factory/draft-scenes",
             headers=self._get_headers(),
         )
         return self._handle_response(response)

@@ -6,8 +6,8 @@
 
 RobotEditMCP 是一个模型上下文协议 (MCP) 服务器，为 AI Agent 提供管理 Robot 配置的工具。它通过 RESTful API 实现对草稿配置、在线（生产）配置和模板的操作。
 
-服务器通过以下 HTTP 头部进行认证和路由：
-- `admin_key`: API 认证令牌（使用 ROBOT_ADMIN_TOKEN）
+服务器通过以下 HTTP Cookies 进行认证和路由：
+- `adminToken`: API 认证令牌（使用 ROBOT_ADMIN_TOKEN）
 - `tfNamespace`: Kubernetes 命名空间，用于 K8s 网络层 Pod 定位
 - `tfRobotId`: Robot 实例标识符，用于 K8s 服务发现和路由
 
@@ -58,7 +58,8 @@ make test            # 运行 pytest（目前还没有测试）
 - 所有 API 端点按类别组织（draft/online/template/metadata）
 - 通过 TFSResponse 模型使用 `_handle_response()` 标准化响应
 - API 错误时抛出带 code 和 message 的 `RobotAPIError`
-- 认证：使用 `admin_key` 头部（不是 Bearer token）
+- 认证：使用 `adminToken` cookie（不是 Bearer token 或 admin_key header）
+- Cookies 在客户端初始化时设置，随所有请求自动发送
 
 **server.py (RobotEditMCPServer)**
 - 使用 `mcp.Server` 编排 MCP 服务器
@@ -107,7 +108,7 @@ make test            # 运行 pytest（目前还没有测试）
 1. AI Agent 调用 MCP 工具 → `server.py:call_tool()`
 2. 路由到 tools/*.py 中的 `handle_*_tool()`
 3. 处理器调用 client.py 中的 `RobotClient` 方法
-4. 客户端发起带 `admin_key` 头部的 HTTP 请求
+4. 客户端发起带 cookies（adminToken、tfNamespace、tfRobotId）的 HTTP 请求
 5. 通过 `_handle_response()` 解析响应 → TFSResponse
 6. 以 TextContent 格式返回结果给 AI Agent
 
@@ -202,7 +203,8 @@ async def handle_category_tool(tool_name: str, arguments: dict, client: RobotCli
 
 ## 关键约束
 
-- 始终使用 `admin_key` 头部进行认证（不是 Bearer token）
+- 始终使用 cookies 进行认证（adminToken、tfNamespace、tfRobotId）
+- Cookies 在客户端初始化时设置，随所有请求自动发送
 - `release_draft()` 发布所有草稿，不是单个草稿
 - `update_draft()` 支持部分更新（仅修改的字段）
 - 模板操作需要 `setting_id`（整数，不是字符串）
