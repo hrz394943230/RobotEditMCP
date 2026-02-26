@@ -1,113 +1,44 @@
-"""API client for RobotServer."""
+"""API client for RobotServer.
+
+This module provides a unified facade over specialized API clients.
+The actual implementation is delegated to category-specific API classes:
+- DraftAPI: Draft configuration management
+- OnlineAPI: Production configuration management
+- TemplateAPI: Template management
+- MetadataAPI: Metadata discovery
+"""
 
 import logging
 
-import httpx
-from pydantic import ValidationError
-
-from roboteditmcp.config import config
-from roboteditmcp.models import (
-    ActionResult,
-    ApplyTemplateResponse,
-    BatchDraftResponse,
-    FactoryListResponse,
-    TemplateListResponse,
-    TFSResponse,
-)
+from roboteditmcp.api.draft import DraftAPI
+from roboteditmcp.api.metadata import MetadataAPI
+from roboteditmcp.api.online import OnlineAPI
+from roboteditmcp.api.template import TemplateAPI
 
 logger = logging.getLogger(__name__)
 
 
-class RobotAPIError(Exception):
-    """Custom exception for API errors."""
-
-    def __init__(self, message: str, code: int = 0):
-        self.message = message
-        self.code = code
-        super().__init__(f"[{code}] {message}")
-
-
 class RobotClient:
-    """HTTP client for Robot API."""
+    """Unified HTTP client for Robot API.
+
+    This class acts as a facade that composes specialized API clients
+    for different functional areas. All method calls are delegated
+    to the appropriate API instance.
+
+    Example:
+        >>> client = RobotClient()
+        >>> drafts = client.list_drafts(scene="ROBOT")
+        >>> client.close()
+    """
 
     def __init__(self):
-        """Initialize the Robot API client."""
-        # Validate configuration
-        is_valid, error_msg = config.validate()
-        if not is_valid:
-            raise ValueError(f"Configuration error: {error_msg}")
+        """Initialize the Robot API client with specialized API instances."""
+        self.draft = DraftAPI()
+        self.online = OnlineAPI()
+        self.template = TemplateAPI()
+        self.metadata = MetadataAPI()
 
-        self.base_url = config.get_base_url()
-        self.admin_token = config.ROBOT_ADMIN_TOKEN
-        self.timeout = config.API_TIMEOUT
-
-        # Prepare cookies for authentication and K8s routing
-        cookies = {
-            "adminToken": self.admin_token,
-            "tfNamespace": config.TF_NAMESPACE,
-            "tfRobotId": config.TF_ROBOT_ID,
-        }
-
-        # Create HTTP client with connection limits and cookies
-        self.client = httpx.Client(
-            timeout=self.timeout,
-            limits=httpx.Limits(max_connections=config.MAX_CONNECTIONS),
-            cookies=cookies,
-        )
-
-        logger.info(f"RobotClient initialized with base_url: {self.base_url}")
-
-    def _get_headers(self) -> dict[str, str]:
-        """Get request headers."""
-        return {
-            "Content-Type": "application/json",
-        }
-
-    def _get_cookies(self) -> dict[str, str]:
-        """Get request cookies for authentication and K8s routing."""
-        return {
-            "adminToken": self.admin_token,
-            "tfNamespace": config.TF_NAMESPACE,
-            "tfRobotId": config.TF_ROBOT_ID,
-        }
-
-    def _handle_response(self, response: httpx.Response) -> dict:
-        """
-        Handle API response and extract data.
-
-        Args:
-            response: HTTP response object
-
-        Returns:
-            Response data
-
-        Raises:
-            RobotAPIError: If API returns an error
-        """
-        try:
-            response_data = response.json()
-
-            # Try to parse as TFSResponse
-            try:
-                tfs_response = TFSResponse(**response_data)
-                if tfs_response.code != 200:
-                    raise RobotAPIError(
-                        tfs_response.message,
-                        code=tfs_response.code,
-                    )
-                return tfs_response.data
-            except ValidationError:
-                # If not standard TFSResponse, return as-is
-                if response.status_code >= 400:
-                    raise RobotAPIError(
-                        response_data.get("message", "Unknown error"),
-                        code=response.status_code,
-                    ) from None
-                return response_data
-
-        except httpx.HTTPError as e:
-            logger.error(f"HTTP error: {e}")
-            raise RobotAPIError(f"HTTP error: {e}") from e
+        logger.info("RobotClient initialized with specialized API modules")
 
     # ========== Draft Configuration Management ==========
 
@@ -117,8 +48,7 @@ class RobotClient:
         factoryName: str | None = None,
         settingName: str | None = None,
     ) -> list:
-        """
-        List draft configurations with optional filters.
+        """List draft configurations with optional filters.
 
         Args:
             scene: Filter by scene type (e.g., "ROBOT", "LLM", "CHAIN")
@@ -128,24 +58,10 @@ class RobotClient:
         Returns:
             List of DraftFactorySettingDto
         """
-        params = {}
-        if scene:
-            params["scene"] = scene
-        if factoryName:
-            params["factoryName"] = factoryName
-        if settingName:
-            params["settingName"] = settingName
-
-        response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-settings",
-            headers=self._get_headers(),
-            params=params,
-        )
-        return self._handle_response(response)
+        return self.draft.list_drafts(scene, factoryName, settingName)
 
     def get_draft(self, setting_id: int) -> dict:
-        """
-        Get a single draft configuration by ID.
+        """Get a single draft configuration by ID.
 
         Args:
             setting_id: Draft configuration ID
@@ -153,11 +69,7 @@ class RobotClient:
         Returns:
             DraftFactorySettingDto
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.draft.get_draft(setting_id)
 
     def create_draft(
         self,
@@ -166,8 +78,7 @@ class RobotClient:
         setting_name: str,
         config: dict,
     ) -> dict:
-        """
-        Create a new draft configuration.
+        """Create a new draft configuration.
 
         Args:
             scene: Scene type
@@ -178,19 +89,7 @@ class RobotClient:
         Returns:
             DraftDetail
         """
-        payload = {
-            "scene": scene,
-            "name": name,
-            "setting_name": setting_name,
-            "config": config,
-        }
-
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings",
-            headers=self._get_headers(),
-            json=payload,
-        )
-        return self._handle_response(response)
+        return self.draft.create_draft(scene, name, setting_name, config)
 
     def update_draft(
         self,
@@ -198,8 +97,7 @@ class RobotClient:
         setting_name: str,
         config: dict,
     ) -> dict:
-        """
-        Update a draft configuration (supports partial update).
+        """Update a draft configuration (supports partial update).
 
         Args:
             setting_id: Draft configuration ID
@@ -209,21 +107,10 @@ class RobotClient:
         Returns:
             DraftFactorySettingDto
         """
-        payload = {
-            "setting_name": setting_name,
-            "config": config,
-        }
-
-        response = self.client.put(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-            json=payload,
-        )
-        return self._handle_response(response)
+        return self.draft.update_draft(setting_id, setting_name, config)
 
     def delete_draft(self, setting_id: int) -> dict:
-        """
-        Delete a draft configuration.
+        """Delete a draft configuration.
 
         Args:
             setting_id: Draft configuration ID
@@ -231,15 +118,10 @@ class RobotClient:
         Returns:
             Deletion result
         """
-        response = self.client.delete(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.draft.delete_draft(setting_id)
 
-    def batch_create_drafts(self, drafts: list) -> BatchDraftResponse:
-        """
-        Batch create draft configurations.
+    def batch_create_drafts(self, drafts: list):
+        """Batch create draft configurations.
 
         Args:
             drafts: List of BatchDraftRequest with temp_id and draft config
@@ -247,32 +129,20 @@ class RobotClient:
         Returns:
             BatchDraftResponse with results and counts
         """
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/batch",
-            headers=self._get_headers(),
-            json={"drafts": drafts},
-        )
-        data = self._handle_response(response)
-        return BatchDraftResponse(**data)
+        return self.draft.batch_create_drafts(drafts)
 
     def release_draft(self) -> dict:
-        """
-        Release all draft configurations to production environment.
+        """Release all draft configurations to production environment.
 
         Note: This releases the entire draft environment, not a single draft.
 
         Returns:
             Dict with onlineRobotId
         """
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/release",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.draft.release_draft()
 
     def get_factory_struct(self, scene: str, factoryName: str) -> dict:
-        """
-        Get factory structure information.
+        """Get factory structure information.
 
         Args:
             scene: Scene type
@@ -281,21 +151,15 @@ class RobotClient:
         Returns:
             DraftFactoryStructDto with config_schema and tfs_actions
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-struct",
-            headers=self._get_headers(),
-            params={"scene": scene, "factoryName": factoryName},
-        )
-        return self._handle_response(response)
+        return self.draft.get_factory_struct(scene, factoryName)
 
     def trigger_draft_action(
         self,
         setting_id: int,
         action: str,
         params: dict | None = None,
-    ) -> ActionResult:
-        """
-        Trigger an action on a draft configuration.
+    ):
+        """Trigger an action on a draft configuration.
 
         Args:
             setting_id: Draft configuration ID
@@ -305,17 +169,7 @@ class RobotClient:
         Returns:
             ActionResult
         """
-        payload = {"action": action}
-        if params:
-            payload["params"] = params
-
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}/actions",
-            headers=self._get_headers(),
-            json=payload,
-        )
-        data = self._handle_response(response)
-        return ActionResult(**data)
+        return self.draft.trigger_draft_action(setting_id, action, params)
 
     # ========== Online Configuration Management ==========
 
@@ -325,8 +179,7 @@ class RobotClient:
         factoryName: str | None = None,
         settingName: str | None = None,
     ) -> list:
-        """
-        List production environment configurations.
+        """List production environment configurations.
 
         Args:
             scene: Filter by scene type
@@ -336,24 +189,10 @@ class RobotClient:
         Returns:
             List of OnlineFactorySettingDto
         """
-        params = {}
-        if scene:
-            params["scene"] = scene
-        if factoryName:
-            params["factoryName"] = factoryName
-        if settingName:
-            params["settingName"] = settingName
-
-        response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings",
-            headers=self._get_headers(),
-            params=params,
-        )
-        return self._handle_response(response)
+        return self.online.list_online_configs(scene, factoryName, settingName)
 
     def get_online_config(self, setting_id: int) -> dict:
-        """
-        Get a single online configuration by ID.
+        """Get a single online configuration by ID.
 
         Args:
             setting_id: Online configuration ID
@@ -361,15 +200,10 @@ class RobotClient:
         Returns:
             OnlineFactorySettingDto
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.online.get_online_config(setting_id)
 
     def get_online_action_detail(self, setting_id: int, action: str) -> dict:
-        """
-        Get detailed information about a specific action.
+        """Get detailed information about a specific action.
 
         Args:
             setting_id: Online configuration ID
@@ -378,20 +212,15 @@ class RobotClient:
         Returns:
             OnlineActionDetailDto
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}/actions/{action}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.online.get_online_action_detail(setting_id, action)
 
     def trigger_online_action(
         self,
         setting_id: int,
         action: str,
         params: dict | None = None,
-    ) -> ActionResult:
-        """
-        Trigger an action on an online configuration.
+    ):
+        """Trigger an action on an online configuration.
 
         Args:
             setting_id: Online configuration ID
@@ -401,17 +230,7 @@ class RobotClient:
         Returns:
             ActionResult
         """
-        payload = {"action": action}
-        if params:
-            payload["params"] = params
-
-        response = self.client.post(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}/actions",
-            headers=self._get_headers(),
-            json=payload,
-        )
-        data = self._handle_response(response)
-        return ActionResult(**data)
+        return self.online.trigger_online_action(setting_id, action, params)
 
     # ========== Template Management ==========
 
@@ -423,9 +242,8 @@ class RobotClient:
         templateName: str | None = None,
         page: int = 1,
         pageSize: int = 10,
-    ) -> TemplateListResponse:
-        """
-        List available templates.
+    ):
+        """List available templates.
 
         Args:
             scene: Filter by scene type
@@ -438,27 +256,12 @@ class RobotClient:
         Returns:
             TemplateListResponse with templates and total count
         """
-        params = {"page": page, "pageSize": pageSize}
-        if scene:
-            params["scene"] = scene
-        if factoryName:
-            params["factoryName"] = factoryName
-        if settingName:
-            params["settingName"] = settingName
-        if templateName:
-            params["templateName"] = templateName
-
-        response = self.client.get(
-            f"{self.base_url}/api/v1/template/factory-settings",
-            headers=self._get_headers(),
-            params=params,
+        return self.template.list_templates(
+            scene, factoryName, settingName, templateName, page, pageSize
         )
-        data = self._handle_response(response)
-        return TemplateListResponse(**data)
 
     def get_template(self, setting_id: int) -> dict:
-        """
-        Get a single template by ID.
+        """Get a single template by ID.
 
         Args:
             setting_id: Template ID
@@ -466,15 +269,10 @@ class RobotClient:
         Returns:
             TemplateFactorySettingDto
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/template/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.template.get_template(setting_id)
 
-    def apply_template(self, templateSettingId: int) -> ApplyTemplateResponse:
-        """
-        Create a new draft configuration from a template.
+    def apply_template(self, templateSettingId: int):
+        """Create a new draft configuration from a template.
 
         Args:
             templateSettingId: Template ID
@@ -482,16 +280,10 @@ class RobotClient:
         Returns:
             ApplyTemplateResponse with draft_id
         """
-        response = self.client.post(
-            f"{self.base_url}/api/v1/template/factory-settings/{templateSettingId}/apply",
-            headers=self._get_headers(),
-        )
-        data = self._handle_response(response)
-        return ApplyTemplateResponse(**data)
+        return self.template.apply_template(templateSettingId)
 
     def save_as_template(self, setting_id: int, name: str) -> dict:
-        """
-        Save a draft configuration as a template.
+        """Save a draft configuration as a template.
 
         Args:
             setting_id: Draft configuration ID
@@ -500,16 +292,10 @@ class RobotClient:
         Returns:
             TemplateFactorySettingDto
         """
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}/save-as-template",
-            headers=self._get_headers(),
-            json={"name": name},
-        )
-        return self._handle_response(response)
+        return self.template.save_as_template(setting_id, name)
 
     def delete_template(self, setting_id: int) -> dict:
-        """
-        Delete a template.
+        """Delete a template.
 
         Args:
             setting_id: Template ID
@@ -517,34 +303,24 @@ class RobotClient:
         Returns:
             Deletion result
         """
-        response = self.client.delete(
-            f"{self.base_url}/api/v1/template/factory-settings/{setting_id}",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.template.delete_template(setting_id)
 
     # ========== Metadata Tools ==========
 
     def list_scenes(self) -> list[str]:
-        """
-        List all available scene types.
+        """List all available scene types.
 
         Returns:
             List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
         """
-        response = self.client.get(
-            f"{self.base_url}/factory/draft-scenes",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
+        return self.metadata.list_scenes()
 
     def list_factories(
         self,
         scene: str,
         type: str = "draft",
-    ) -> FactoryListResponse:
-        """
-        List all factory types for a given scene.
+    ):
+        """List all factory types for a given scene.
 
         Args:
             scene: Scene type
@@ -553,17 +329,16 @@ class RobotClient:
         Returns:
             FactoryListResponse with factory_names list
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/metadata/factories",
-            headers=self._get_headers(),
-            params={"scene": scene, "type": type},
-        )
-        data = self._handle_response(response)
-        return FactoryListResponse(**data)
+        return self.metadata.list_factories(scene, type)
+
+    # ========== Resource Management ==========
 
     def close(self):
-        """Close the HTTP client."""
-        self.client.close()
+        """Close all HTTP clients."""
+        self.draft.close()
+        self.online.close()
+        self.template.close()
+        self.metadata.close()
 
     def __enter__(self):
         """Context manager entry."""
