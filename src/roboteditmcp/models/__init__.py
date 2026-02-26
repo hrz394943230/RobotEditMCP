@@ -1,6 +1,7 @@
 """Data models for RobotEditMCP."""
 
-from typing import Any, Generic, TypeVar
+from typing import Any
+
 from pydantic import BaseModel
 
 

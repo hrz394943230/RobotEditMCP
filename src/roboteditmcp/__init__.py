@@ -2,8 +2,8 @@
 
 __version__ = "0.1.0"
 
-from roboteditmcp.config import config
 from roboteditmcp.client import RobotClient
+from roboteditmcp.config import config
 from roboteditmcp.server import RobotEditMCPServer
 
 __all__ = [

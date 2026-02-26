@@ -1,23 +1,22 @@
 """MCP server for Robot configuration management."""
 
 import logging
-from typing import Any
 
 from mcp.server import Server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
 from roboteditmcp.client import RobotClient
 from roboteditmcp.config import config
 from roboteditmcp.logging_config import setup_logging
 from roboteditmcp.tools import (
-    register_draft_tools,
     handle_draft_tool,
-    register_online_tools,
-    handle_online_tool,
-    register_template_tools,
-    handle_template_tool,
-    register_metadata_tools,
     handle_metadata_tool,
+    handle_online_tool,
+    handle_template_tool,
+    register_draft_tools,
+    register_metadata_tools,
+    register_online_tools,
+    register_template_tools,
 )
 
 logger = logging.getLogger(__name__)

@@ -157,7 +157,9 @@ Parameters:
     ]
 
 
-async def handle_template_tool(tool_name: str, arguments: dict, client: RobotClient) -> Any:
+async def handle_template_tool(
+    tool_name: str, arguments: dict, client: RobotClient
+) -> Any:
     """
     Handle template tool calls.
 

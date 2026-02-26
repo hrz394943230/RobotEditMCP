@@ -69,7 +69,9 @@ Use this to discover what factory types are available for a specific scene.""",
     ]
 
 
-async def handle_metadata_tool(tool_name: str, arguments: dict, client: RobotClient) -> Any:
+async def handle_metadata_tool(
+    tool_name: str, arguments: dict, client: RobotClient
+) -> Any:
     """
     Handle metadata tool calls.
 

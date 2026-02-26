@@ -135,7 +135,9 @@ Returns ActionResult with success status and result.""",
     ]
 
 
-async def handle_online_tool(tool_name: str, arguments: dict, client: RobotClient) -> Any:
+async def handle_online_tool(
+    tool_name: str, arguments: dict, client: RobotClient
+) -> Any:
     """
     Handle online tool calls.
 

@@ -5,8 +5,8 @@ import logging
 
 from mcp.server.stdio import stdio_server
 
-from roboteditmcp.server import RobotEditMCPServer
 from roboteditmcp.logging_config import setup_logging
+from roboteditmcp.server import RobotEditMCPServer
 
 logger = logging.getLogger(__name__)
 

@@ -1,19 +1,18 @@
 """API client for RobotServer."""
 
 import logging
-from typing import Any
 
 import httpx
 from pydantic import ValidationError
 
 from roboteditmcp.config import config
 from roboteditmcp.models import (
-    TFSResponse,
     ActionResult,
-    BatchDraftResponse,
-    TemplateListResponse,
     ApplyTemplateResponse,
+    BatchDraftResponse,
     FactoryListResponse,
+    TemplateListResponse,
+    TFSResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,12 +87,12 @@ class RobotClient:
                     raise RobotAPIError(
                         response_data.get("message", "Unknown error"),
                         code=response.status_code,
-                    )
+                    ) from None
                 return response_data
 
         except httpx.HTTPError as e:
             logger.error(f"HTTP error: {e}")
-            raise RobotAPIError(f"HTTP error: {e}")
+            raise RobotAPIError(f"HTTP error: {e}") from e
 
     # ========== Draft Configuration Management ==========
 

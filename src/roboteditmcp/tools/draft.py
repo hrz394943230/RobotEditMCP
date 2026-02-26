@@ -192,7 +192,12 @@ Returns:
                                 },
                                 "draft": {
                                     "type": "object",
-                                    "required": ["scene", "name", "setting_name", "config"],
+                                    "required": [
+                                        "scene",
+                                        "name",
+                                        "setting_name",
+                                        "config",
+                                    ],
                                     "properties": {
                                         "scene": {"type": "string"},
                                         "name": {"type": "string"},
@@ -293,7 +298,9 @@ Returns ActionResult with success status and result.""",
     ]
 
 
-async def handle_draft_tool(tool_name: str, arguments: dict, client: RobotClient) -> Any:
+async def handle_draft_tool(
+    tool_name: str, arguments: dict, client: RobotClient
+) -> Any:
     """
     Handle draft tool calls.
 
