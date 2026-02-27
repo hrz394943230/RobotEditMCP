@@ -141,17 +141,18 @@ class RobotClient:
         """
         return self.draft.release_draft()
 
-    def get_factory_struct(self, scene: str, factoryName: str) -> dict:
-        """Get factory structure information.
+    def get_factory_struct(self, factoryName: str) -> dict:
+        """Get draft factory structure information.
+
+        Note: Only requires factoryName parameter, NOT scene!
 
         Args:
-            scene: Scene type
-            factoryName: Factory name
+            factoryName: Factory name (e.g., "RobotBrainDraftSetting")
 
         Returns:
             DraftFactoryStructDto with config_schema and tfs_actions
         """
-        return self.draft.get_factory_struct(scene, factoryName)
+        return self.draft.get_draft_factory_struct(factoryName)
 
     def trigger_draft_action(
         self,
@@ -282,17 +283,29 @@ class RobotClient:
         """
         return self.template.apply_template(templateSettingId)
 
-    def save_as_template(self, setting_id: int, name: str) -> dict:
+    def save_as_template(
+        self,
+        setting_id: int,
+        name: str,
+        scene: str | None = None,
+        setting_name: str | None = None,
+        config: dict | None = None,
+    ) -> dict:
         """Save a draft configuration as a template.
+
+        Uses DraftFactorySettingPostDto structure for request body.
 
         Args:
             setting_id: Draft configuration ID
-            name: Template name
+            name: Factory name (required)
+            scene: Scene type (optional)
+            setting_name: Template name (optional)
+            config: Configuration data (optional)
 
         Returns:
-            TemplateFactorySettingDto
+            Dict with templateId
         """
-        return self.template.save_as_template(setting_id, name)
+        return self.draft.save_as_template(setting_id, name, scene, setting_name, config)
 
     def delete_template(self, setting_id: int) -> dict:
         """Delete a template.

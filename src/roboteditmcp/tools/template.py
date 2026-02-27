@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def register_template_tools(client: RobotClient) -> list[Tool]:
     """
-    Register all template management tools.
+    Register all template management tools (7 tools).
 
     Args:
         client: Robot API client instance
@@ -21,9 +21,84 @@ def register_template_tools(client: RobotClient) -> list[Tool]:
         List of MCP tools
     """
     return [
-        # 14. list_templates
+        # ========================================
+        # Discovery Tools (3)
+        # ========================================
+        # 1. template_get_scenes
         Tool(
-            name="list_templates",
+            name="template_get_scenes",
+            description="""Get all available scene types for template configurations.
+
+Returns a list of scene names (e.g., ["ROBOT", "LLM", "CHAIN"]).
+
+Use this to discover available scenes before querying factories or templates.""",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        # 2. template_get_factories
+        Tool(
+            name="template_get_factories",
+            description="""Get all factory types for a given scene in template mode.
+
+Parameters:
+- scene: Scene type (e.g., 'ROBOT', 'LLM', 'CHAIN')
+
+Returns dict with factory_names list.
+
+Use this to discover available factory types before querying templates.""",
+            inputSchema={
+                "type": "object",
+                "required": ["scene"],
+                "properties": {
+                    "scene": {
+                        "type": "string",
+                        "description": "Scene type (e.g., 'ROBOT', 'LLM', 'CHAIN')",
+                    },
+                },
+            },
+        ),
+        # 3. template_get_factory_struct
+        Tool(
+            name="template_get_factory_struct",
+            description="""Get template factory structure definition.
+
+IMPORTANT: Requires both scene and factoryName parameters!
+
+Note: Templates do NOT have tfs_actions (only config_schema).
+
+Use this to understand:
+- config_schema: Schema for configurations of this factory type
+
+Ideal for exploring factory types without needing a specific template instance.
+
+Parameters:
+- scene: Scene type (e.g., 'ROBOT')
+- factoryName: Factory name (e.g., 'RobotBrainTemplateSetting')
+
+Returns TemplateFactoryStructDto.""",
+            inputSchema={
+                "type": "object",
+                "required": ["scene", "factoryName"],
+                "properties": {
+                    "scene": {
+                        "type": "string",
+                        "description": "Scene type",
+                    },
+                    "factoryName": {
+                        "type": "string",
+                        "description": "Factory name",
+                    },
+                },
+            },
+        ),
+        # ========================================
+        # Template Queries (2)
+        # ========================================
+        # 4. template_list
+        Tool(
+            name="template_list",
             description="""List available templates with pagination and filters.
 
 Returns templates list with total count.
@@ -39,7 +114,6 @@ Optional filters:
 - templateName: Filter by template name""",
             inputSchema={
                 "type": "object",
-                "required": ["page", "pageSize"],
                 "properties": {
                     "scene": {
                         "type": "string",
@@ -70,12 +144,17 @@ Optional filters:
                 },
             },
         ),
-        # 15. get_template
+        # 5. template_get
         Tool(
-            name="get_template",
+            name="template_get",
             description="""Get detailed information about a single template.
 
-Returns TemplateFactorySettingDto with complete template information.""",
+Returns TemplateFactorySettingDto with complete template information including:
+- config_schema: Schema for configuration validation
+- config: Template configuration content
+- template_name: Template name
+
+Note: Templates do NOT have tfs_actions.""",
             inputSchema={
                 "type": "object",
                 "required": ["setting_id"],
@@ -87,9 +166,12 @@ Returns TemplateFactorySettingDto with complete template information.""",
                 },
             },
         ),
-        # 16. apply_template
+        # ========================================
+        # Template Operations (2)
+        # ========================================
+        # 6. template_apply
         Tool(
-            name="apply_template",
+            name="template_apply",
             description="""Create a new draft configuration from a template.
 
 Parameters:
@@ -97,7 +179,7 @@ Parameters:
 
 Note:
 - Does not support specifying a new configuration name
-- After applying, use update_draft() to rename the configuration
+- After applying, use draft_update() to rename the configuration
 
 Returns ApplyTemplateResponse with the created draft_id.""",
             inputSchema={
@@ -111,34 +193,9 @@ Returns ApplyTemplateResponse with the created draft_id.""",
                 },
             },
         ),
-        # 17. save_as_template
+        # 7. template_delete
         Tool(
-            name="save_as_template",
-            description="""Save a draft configuration as a template.
-
-Parameters:
-- setting_id: Draft configuration ID
-- name: Template name (passed in request body)
-
-Returns TemplateFactorySettingDto.""",
-            inputSchema={
-                "type": "object",
-                "required": ["setting_id", "name"],
-                "properties": {
-                    "setting_id": {
-                        "type": "integer",
-                        "description": "Draft configuration ID",
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "Template name",
-                    },
-                },
-            },
-        ),
-        # 18. delete_template
-        Tool(
-            name="delete_template",
+            name="template_delete",
             description="""Delete a template.
 
 Parameters:
@@ -172,7 +229,17 @@ async def handle_template_tool(
         Tool result
     """
     handlers = {
-        "list_templates": lambda: client.list_templates(
+        # Discovery
+        "template_get_scenes": lambda: client.template.get_template_scenes(),
+        "template_get_factories": lambda: client.template.get_template_factories(
+            scene=arguments["scene"],
+        ),
+        "template_get_factory_struct": lambda: client.template.get_template_factory_struct(
+            scene=arguments["scene"],
+            factoryName=arguments["factoryName"],
+        ),
+        # Template Queries
+        "template_list": lambda: client.template.list_templates(
             scene=arguments.get("scene"),
             factoryName=arguments.get("factoryName"),
             settingName=arguments.get("settingName"),
@@ -180,13 +247,14 @@ async def handle_template_tool(
             page=arguments.get("page", 1),
             pageSize=arguments.get("pageSize", 10),
         ),
-        "get_template": lambda: client.get_template(arguments["setting_id"]),
-        "apply_template": lambda: client.apply_template(arguments["templateSettingId"]),
-        "save_as_template": lambda: client.save_as_template(
-            setting_id=arguments["setting_id"],
-            name=arguments["name"],
+        "template_get": lambda: client.template.get_template(arguments["setting_id"]),
+        # Template Operations
+        "template_apply": lambda: client.template.apply_template(
+            arguments["templateSettingId"],
         ),
-        "delete_template": lambda: client.delete_template(arguments["setting_id"]),
+        "template_delete": lambda: client.template.delete_template(
+            arguments["setting_id"],
+        ),
     }
 
     if tool_name not in handlers:

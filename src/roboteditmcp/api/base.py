@@ -52,6 +52,7 @@ class BaseAPI:
             timeout=self.timeout,
             limits=httpx.Limits(max_connections=config.MAX_CONNECTIONS),
             cookies=cookies,
+            follow_redirects=True,  # Automatically follow HTTP redirects
         )
 
         logger.info(f"BaseAPI initialized with base_url: {self.base_url}")

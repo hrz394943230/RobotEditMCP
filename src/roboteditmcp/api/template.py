@@ -11,12 +11,68 @@ logger = logging.getLogger(__name__)
 class TemplateAPI(BaseAPI):
     """API client for template management.
 
-    Handles all template-related operations:
+    Handles all template-related operations (7 endpoints):
+    - Scene and factory discovery
     - Listing and querying templates
     - Applying templates to create new drafts
-    - Saving drafts as templates
     - Deleting templates
     """
+
+    # ========================================
+    # Discovery Endpoints
+    # ========================================
+
+    def get_template_scenes(self) -> list[str]:
+        """
+        Get all available scene types for template configurations.
+
+        Returns:
+            List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/templates/scenes",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    def get_template_factories(self, scene: str) -> dict:
+        """
+        Get all factory types for a given scene in template mode.
+
+        Args:
+            scene: Scene type (e.g., "ROBOT", "LLM", "CHAIN")
+
+        Returns:
+            Dict with factory_names list
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/templates/{scene}/factories",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    def get_template_factory_struct(self, scene: str, factoryName: str) -> dict:
+        """
+        Get template factory structure definition.
+
+        Note: Requires both scene and factoryName parameters!
+
+        Args:
+            scene: Scene type (e.g., "ROBOT")
+            factoryName: Factory name (e.g., "RobotBrainTemplateSetting")
+
+        Returns:
+            TemplateFactoryStructDto with config_schema (no tfs_actions)
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/templates/struct/{scene}/{factoryName}",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    # ========================================
+    # Template Queries
+    # ========================================
 
     def list_templates(
         self,
@@ -52,7 +108,7 @@ class TemplateAPI(BaseAPI):
             params["templateName"] = templateName
 
         response = self.client.get(
-            f"{self.base_url}/api/v1/template/factory-settings",
+            f"{self.base_url}/factory/templates/query",
             headers=self._get_headers(),
             params=params,
         )
@@ -70,10 +126,14 @@ class TemplateAPI(BaseAPI):
             TemplateFactorySettingDto
         """
         response = self.client.get(
-            f"{self.base_url}/api/v1/template/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/templates/{setting_id}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
+
+    # ========================================
+    # Template Operations
+    # ========================================
 
     def apply_template(self, templateSettingId: int) -> ApplyTemplateResponse:
         """
@@ -86,29 +146,12 @@ class TemplateAPI(BaseAPI):
             ApplyTemplateResponse with draft_id
         """
         response = self.client.post(
-            f"{self.base_url}/api/v1/template/factory-settings/{templateSettingId}/apply",
+            f"{self.base_url}/factory/templates/apply",
             headers=self._get_headers(),
+            json={"templateSettingId": templateSettingId},
         )
         data = self._handle_response(response)
         return ApplyTemplateResponse(**data)
-
-    def save_as_template(self, setting_id: int, name: str) -> dict:
-        """
-        Save a draft configuration as a template.
-
-        Args:
-            setting_id: Draft configuration ID
-            name: Template name
-
-        Returns:
-            TemplateFactorySettingDto
-        """
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}/save-as-template",
-            headers=self._get_headers(),
-            json={"name": name},
-        )
-        return self._handle_response(response)
 
     def delete_template(self, setting_id: int) -> dict:
         """
@@ -121,7 +164,7 @@ class TemplateAPI(BaseAPI):
             Deletion result
         """
         response = self.client.delete(
-            f"{self.base_url}/api/v1/template/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/templates/{setting_id}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def register_draft_tools(client: RobotClient) -> list[Tool]:
     """
-    Register all draft configuration management tools.
+    Register all draft configuration management tools (12 tools).
 
     Args:
         client: Robot API client instance
@@ -21,9 +21,81 @@ def register_draft_tools(client: RobotClient) -> list[Tool]:
         List of MCP tools
     """
     return [
-        # 1. list_drafts
+        # ========================================
+        # Discovery Tools (2)
+        # ========================================
+        # 1. draft_get_scenes
         Tool(
-            name="list_drafts",
+            name="draft_get_scenes",
+            description="""Get all available scene types for draft configurations.
+
+Returns a list of scene names (e.g., ["ROBOT", "LLM", "CHAIN"]).
+
+Use this to discover available scenes before querying factories or configurations.""",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        # 2. draft_get_factories
+        Tool(
+            name="draft_get_factories",
+            description="""Get all factory types for a given scene in draft mode.
+
+Parameters:
+- scene: Scene type (e.g., 'ROBOT', 'LLM', 'CHAIN')
+
+Returns dict with factory_names list.
+
+Use this to discover available factory types before creating configurations.""",
+            inputSchema={
+                "type": "object",
+                "required": ["scene"],
+                "properties": {
+                    "scene": {
+                        "type": "string",
+                        "description": "Scene type (e.g., 'ROBOT', 'LLM', 'CHAIN')",
+                    },
+                },
+            },
+        ),
+        # ========================================
+        # Factory Structure (1)
+        # ========================================
+        # 3. draft_get_factory_struct
+        Tool(
+            name="draft_get_factory_struct",
+            description="""Get draft factory structure definition.
+
+IMPORTANT: Only requires factoryName parameter, NOT scene!
+
+Use this to understand:
+- config_schema: Schema for configurations of this factory type
+- tfs_actions: All actions supported by this factory type
+
+Ideal for exploring factory types without needing a specific configuration instance.
+
+Parameters:
+- factoryName: Factory name (e.g., 'RobotBrainDraftSetting')
+
+Returns DraftFactoryStructDto.""",
+            inputSchema={
+                "type": "object",
+                "required": ["factoryName"],
+                "properties": {
+                    "factoryName": {
+                        "type": "string",
+                        "description": "Factory name (e.g., 'RobotBrainDraftSetting')",
+                    },
+                },
+            },
+        ),
+        # ========================================
+        # CRUD Operations (6)
+        # ========================================
+        # 4. draft_list
+        Tool(
+            name="draft_list",
             description="""List draft configurations with optional filters.
 
 Returns a list of draft configurations with full DTO information including config_schema and tfs_actions.
@@ -50,9 +122,9 @@ Example filters:
                 },
             },
         ),
-        # 2. get_draft
+        # 5. draft_get
         Tool(
-            name="get_draft",
+            name="draft_get",
             description="""Get detailed information about a single draft configuration.
 
 Returns complete DraftFactorySettingDto including:
@@ -71,9 +143,9 @@ Returns complete DraftFactorySettingDto including:
                 },
             },
         ),
-        # 3. create_draft
+        # 6. draft_create
         Tool(
-            name="create_draft",
+            name="draft_create",
             description="""Create a new draft configuration.
 
 Required parameters:
@@ -82,7 +154,7 @@ Required parameters:
 - setting_name: Configuration name
 - config: Configuration content as JSON object
 
-Returns DraftDetail with the created configuration.""",
+Returns DraftFactorySettingDto with the created configuration.""",
             inputSchema={
                 "type": "object",
                 "required": ["scene", "name", "setting_name", "config"],
@@ -106,9 +178,9 @@ Returns DraftDetail with the created configuration.""",
                 },
             },
         ),
-        # 4. update_draft
+        # 7. draft_update
         Tool(
-            name="update_draft",
+            name="draft_update",
             description="""Update a draft configuration (supports partial update).
 
 Parameters:
@@ -137,9 +209,9 @@ Returns updated DraftFactorySettingDto.""",
                 },
             },
         ),
-        # 5. delete_draft
+        # 8. draft_delete
         Tool(
-            name="delete_draft",
+            name="draft_delete",
             description="""Delete a draft configuration.
 
 Parameters:
@@ -155,9 +227,9 @@ Parameters:
                 },
             },
         ),
-        # 6. batch_create_drafts
+        # 9. draft_batch_create
         Tool(
-            name="batch_create_drafts",
+            name="draft_batch_create",
             description="""Batch create multiple draft configurations with internal references.
 
 Use this to create interconnected configurations that reference each other.
@@ -211,9 +283,12 @@ Returns:
                 },
             },
         ),
-        # 7. release_draft
+        # ========================================
+        # Release Operations (1)
+        # ========================================
+        # 10. draft_release
         Tool(
-            name="release_draft",
+            name="draft_release",
             description="""Release ALL draft configurations to production environment.
 
 IMPORTANT: This releases the entire draft environment, not a single draft!
@@ -230,50 +305,67 @@ Returns:
                 "properties": {},
             },
         ),
-        # 8. get_factory_struct
+        # ========================================
+        # Template Operations (1)
+        # ========================================
+        # 11. draft_save_as_template
         Tool(
-            name="get_factory_struct",
-            description="""Get factory structure information for a scene and factory type.
+            name="draft_save_as_template",
+            description="""Save a draft configuration as a template.
 
-Use this to understand:
-- config_schema: Schema for configurations of this factory type
-- tfs_actions: All actions supported by this factory type
-
-Ideal for exploring factory types without needing a specific configuration instance.
+Uses DraftFactorySettingPostDto structure for request body.
 
 Parameters:
-- scene: Scene type
-- factoryName: Factory name
+- draft_id: Draft configuration ID (required)
+- name: Factory name (required)
+- scene: Scene type (optional)
+- setting_name: Template name (optional)
+- config: Configuration data (optional)
 
-Returns DraftFactoryStructDto.""",
+Returns dict with templateId.""",
             inputSchema={
                 "type": "object",
-                "required": ["scene", "factoryName"],
+                "required": ["draft_id", "name"],
                 "properties": {
+                    "draft_id": {
+                        "type": "integer",
+                        "description": "Draft configuration ID",
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Factory name (required)",
+                    },
                     "scene": {
                         "type": "string",
-                        "description": "Scene type",
+                        "description": "Scene type (optional)",
                     },
-                    "factoryName": {
+                    "setting_name": {
                         "type": "string",
-                        "description": "Factory name",
+                        "description": "Template name (optional)",
+                    },
+                    "config": {
+                        "type": "object",
+                        "description": "Configuration data (optional)",
                     },
                 },
             },
         ),
-        # 9. trigger_draft_action
+        # ========================================
+        # Action Triggers (1)
+        # ========================================
+        # 12. draft_trigger_action
         Tool(
-            name="trigger_draft_action",
+            name="draft_trigger_action",
             description="""Trigger an action on a draft configuration.
 
 Actions are available in the tfs_actions field from get_draft() response.
+
+Note: Uses PUT method. Draft configurations cannot trigger CELERY async tasks.
 
 Parameters:
 - setting_id: Draft configuration ID
 - action: Action name
 - params: Optional action parameters (JSON object)
-
-Note: Draft configurations cannot trigger CELERY async tasks (only online configs support this).
 
 Returns ActionResult with success status and result.""",
             inputSchema={
@@ -313,31 +405,49 @@ async def handle_draft_tool(
         Tool result
     """
     handlers = {
-        "list_drafts": lambda: client.list_drafts(
+        # Discovery
+        "draft_get_scenes": lambda: client.draft.get_draft_scenes(),
+        "draft_get_factories": lambda: client.draft.get_draft_factories(
+            scene=arguments["scene"],
+        ),
+        # Factory Structure
+        "draft_get_factory_struct": lambda: client.draft.get_draft_factory_struct(
+            factoryName=arguments["factoryName"],
+        ),
+        # CRUD
+        "draft_list": lambda: client.draft.list_drafts(
             scene=arguments.get("scene"),
             factoryName=arguments.get("factoryName"),
             settingName=arguments.get("settingName"),
         ),
-        "get_draft": lambda: client.get_draft(arguments["setting_id"]),
-        "create_draft": lambda: client.create_draft(
+        "draft_get": lambda: client.draft.get_draft(arguments["setting_id"]),
+        "draft_create": lambda: client.draft.create_draft(
             scene=arguments["scene"],
             name=arguments["name"],
             setting_name=arguments["setting_name"],
             config=arguments["config"],
         ),
-        "update_draft": lambda: client.update_draft(
+        "draft_update": lambda: client.draft.update_draft(
             setting_id=arguments["setting_id"],
             setting_name=arguments["setting_name"],
             config=arguments["config"],
         ),
-        "delete_draft": lambda: client.delete_draft(arguments["setting_id"]),
-        "batch_create_drafts": lambda: client.batch_create_drafts(arguments["drafts"]),
-        "release_draft": lambda: client.release_draft(),
-        "get_factory_struct": lambda: client.get_factory_struct(
-            scene=arguments["scene"],
-            factoryName=arguments["factoryName"],
+        "draft_delete": lambda: client.draft.delete_draft(arguments["setting_id"]),
+        "draft_batch_create": lambda: client.draft.batch_create_drafts(
+            arguments["drafts"],
         ),
-        "trigger_draft_action": lambda: client.trigger_draft_action(
+        # Release
+        "draft_release": lambda: client.draft.release_draft(),
+        # Template
+        "draft_save_as_template": lambda: client.draft.save_as_template(
+            draft_id=arguments["draft_id"],
+            name=arguments["name"],
+            scene=arguments.get("scene"),
+            setting_name=arguments.get("setting_name"),
+            config=arguments.get("config"),
+        ),
+        # Actions
+        "draft_trigger_action": lambda: client.draft.trigger_draft_action(
             setting_id=arguments["setting_id"],
             action=arguments["action"],
             params=arguments.get("params"),

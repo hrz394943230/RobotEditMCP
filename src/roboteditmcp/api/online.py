@@ -11,11 +11,68 @@ logger = logging.getLogger(__name__)
 class OnlineAPI(BaseAPI):
     """API client for online (production) configuration management.
 
-    Handles all online-related operations:
+    Handles all online-related operations (7 endpoints):
+    - Scene and factory discovery
     - Querying production configurations
     - Getting action details
     - Triggering actions on production configurations
     """
+
+    # ========================================
+    # Discovery Endpoints
+    # ========================================
+
+    def get_online_scenes(self) -> list[str]:
+        """
+        Get all available scene types for online configurations.
+
+        Returns:
+            List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/online/scenes",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    def get_online_factories(self, scene: str) -> dict:
+        """
+        Get all factory types for a given scene in online mode.
+
+        Args:
+            scene: Scene type (e.g., "ROBOT", "LLM", "CHAIN")
+
+        Returns:
+            Dict with factory_names list
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/online/{scene}/factories",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    def get_online_factory_struct(self, scene: str, factoryName: str) -> dict:
+        """
+        Get online factory structure definition.
+
+        Note: Requires both scene and factoryName parameters!
+
+        Args:
+            scene: Scene type (e.g., "ROBOT")
+            factoryName: Factory name (e.g., "RobotBrainOnlineSetting")
+
+        Returns:
+            OnlineFactoryStructDto with config_schema and tfs_actions
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/online/struct/{scene}/{factoryName}",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    # ========================================
+    # Configuration Queries
+    # ========================================
 
     def list_online_configs(
         self,
@@ -43,7 +100,7 @@ class OnlineAPI(BaseAPI):
             params["settingName"] = settingName
 
         response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings",
+            f"{self.base_url}/factory/online/query",
             headers=self._get_headers(),
             params=params,
         )
@@ -60,10 +117,14 @@ class OnlineAPI(BaseAPI):
             OnlineFactorySettingDto
         """
         response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/online/{setting_id}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
+
+    # ========================================
+    # Action Operations
+    # ========================================
 
     def get_online_action_detail(self, setting_id: int, action: str) -> dict:
         """
@@ -77,7 +138,7 @@ class OnlineAPI(BaseAPI):
             OnlineActionDetailDto
         """
         response = self.client.get(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}/actions/{action}",
+            f"{self.base_url}/factory/online/{setting_id}/action/{action}/detail",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -99,14 +160,15 @@ class OnlineAPI(BaseAPI):
         Returns:
             ActionResult
         """
-        payload = {"action": action}
+        # Backend uses PUT method with params as body
+        payload = {}
         if params:
-            payload["params"] = params
+            payload = params
 
-        response = self.client.post(
-            f"{self.base_url}/api/v1/online/factory-settings/{setting_id}/actions",
+        response = self.client.put(
+            f"{self.base_url}/factory/online/{setting_id}/action/{action}",
             headers=self._get_headers(),
-            json=payload,
+            json=payload if payload else None,
         )
         data = self._handle_response(response)
         return ActionResult(**data)

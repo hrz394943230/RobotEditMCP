@@ -11,13 +11,74 @@ logger = logging.getLogger(__name__)
 class DraftAPI(BaseAPI):
     """API client for draft configuration management.
 
-    Handles all draft-related operations:
+    Handles all draft-related operations (12 endpoints):
+    - Scene and factory discovery
     - CRUD operations on draft configurations
     - Batch creation with temp_id references
     - Releasing drafts to production
+    - Saving drafts as templates
     - Factory structure queries
     - Action triggers
     """
+
+    # ========================================
+    # Discovery Endpoints (from metadata.py)
+    # ========================================
+
+    def get_draft_scenes(self) -> list[str]:
+        """
+        Get all available scene types for draft configurations.
+
+        Returns:
+            List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/drafts/scenes",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    def get_draft_factories(self, scene: str) -> dict:
+        """
+        Get all factory types for a given scene in draft mode.
+
+        Args:
+            scene: Scene type (e.g., "ROBOT", "LLM", "CHAIN")
+
+        Returns:
+            Dict with factory_names list
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/drafts/{scene}/factories",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    # ========================================
+    # Factory Structure
+    # ========================================
+
+    def get_draft_factory_struct(self, factoryName: str) -> dict:
+        """
+        Get draft factory structure definition.
+
+        Note: Only requires factoryName parameter, NOT scene!
+
+        Args:
+            factoryName: Factory name (e.g., "RobotBrainDraftSetting")
+
+        Returns:
+            DraftFactoryStructDto with config_schema and tfs_actions
+        """
+        response = self.client.get(
+            f"{self.base_url}/factory/drafts/struct/{factoryName}",
+            headers=self._get_headers(),
+        )
+        return self._handle_response(response)
+
+    # ========================================
+    # CRUD Operations
+    # ========================================
 
     def list_drafts(
         self,
@@ -45,7 +106,7 @@ class DraftAPI(BaseAPI):
             params["settingName"] = settingName
 
         response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-settings",
+            f"{self.base_url}/factory/drafts/query",
             headers=self._get_headers(),
             params=params,
         )
@@ -62,7 +123,7 @@ class DraftAPI(BaseAPI):
             DraftFactorySettingDto
         """
         response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/drafts/{setting_id}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -84,17 +145,17 @@ class DraftAPI(BaseAPI):
             config: Configuration content (JSON object)
 
         Returns:
-            DraftDetail
+            DraftFactorySettingDto
         """
         payload = {
             "scene": scene,
             "name": name,
-            "setting_name": setting_name,
+            "settingName": setting_name,
             "config": config,
         }
 
         response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings",
+            f"{self.base_url}/factory/drafts",
             headers=self._get_headers(),
             json=payload,
         )
@@ -118,12 +179,12 @@ class DraftAPI(BaseAPI):
             DraftFactorySettingDto
         """
         payload = {
-            "setting_name": setting_name,
+            "settingName": setting_name,
             "config": config,
         }
 
         response = self.client.put(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/drafts/{setting_id}",
             headers=self._get_headers(),
             json=payload,
         )
@@ -140,10 +201,14 @@ class DraftAPI(BaseAPI):
             Deletion result
         """
         response = self.client.delete(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}",
+            f"{self.base_url}/factory/drafts/{setting_id}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
+
+    # ========================================
+    # Batch Operations
+    # ========================================
 
     def batch_create_drafts(self, drafts: list) -> BatchDraftResponse:
         """
@@ -156,7 +221,7 @@ class DraftAPI(BaseAPI):
             BatchDraftResponse with results and counts
         """
         response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/batch",
+            f"{self.base_url}/factory/drafts/batch",
             headers=self._get_headers(),
             json={"drafts": drafts},
         )
@@ -173,28 +238,56 @@ class DraftAPI(BaseAPI):
             Dict with onlineRobotId
         """
         response = self.client.post(
-            f"{self.base_url}/api/v1/draft/release",
+            f"{self.base_url}/factory/drafts/release",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
 
-    def get_factory_struct(self, scene: str, factoryName: str) -> dict:
+    # ========================================
+    # Template Operations
+    # ========================================
+
+    def save_as_template(
+        self,
+        draft_id: int,
+        name: str,
+        scene: str | None = None,
+        setting_name: str | None = None,
+        config: dict | None = None,
+    ) -> dict:
         """
-        Get factory structure information.
+        Save a draft configuration as a template.
+
+        Uses DraftFactorySettingPostDto structure for request body.
 
         Args:
-            scene: Scene type
-            factoryName: Factory name
+            draft_id: Draft configuration ID
+            name: Factory name (required)
+            scene: Scene type (optional)
+            setting_name: Template name (optional)
+            config: Configuration data (optional)
 
         Returns:
-            DraftFactoryStructDto with config_schema and tfs_actions
+            Dict with templateId
         """
-        response = self.client.get(
-            f"{self.base_url}/api/v1/draft/factory-struct",
+        payload = {"name": name}
+        if scene is not None:
+            payload["scene"] = scene
+        if setting_name is not None:
+            payload["settingName"] = setting_name
+        if config is not None:
+            payload["config"] = config
+
+        response = self.client.post(
+            f"{self.base_url}/factory/drafts/{draft_id}/savetemplate",
             headers=self._get_headers(),
-            params={"scene": scene, "factoryName": factoryName},
+            json=payload,
         )
         return self._handle_response(response)
+
+    # ========================================
+    # Action Triggers
+    # ========================================
 
     def trigger_draft_action(
         self,
@@ -205,6 +298,8 @@ class DraftAPI(BaseAPI):
         """
         Trigger an action on a draft configuration.
 
+        Note: Uses PUT method (not POST)
+
         Args:
             setting_id: Draft configuration ID
             action: Action name
@@ -213,14 +308,12 @@ class DraftAPI(BaseAPI):
         Returns:
             ActionResult
         """
-        payload = {"action": action}
-        if params:
-            payload["params"] = params
+        body = params if params else {}
 
-        response = self.client.post(
-            f"{self.base_url}/api/v1/draft/factory-settings/{setting_id}/actions",
+        response = self.client.put(
+            f"{self.base_url}/factory/drafts/{setting_id}/action/{action}",
             headers=self._get_headers(),
-            json=payload,
+            json=body,
         )
         data = self._handle_response(response)
         return ActionResult(**data)

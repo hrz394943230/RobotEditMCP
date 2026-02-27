@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TFSResponse(BaseModel):
@@ -36,23 +36,39 @@ class BatchDraftRequest(BaseModel):
 
 
 class BatchDraftResult(BaseModel):
-    """Result of single draft creation in batch."""
+    """Result of single draft creation in batch.
+
+    Backend returns camelCase field names, so we use aliases.
+    """
 
     index: int
-    temp_id: int
+    temp_id: int = Field(alias="tempId")
     success: bool
-    setting_id: int | None = None
-    setting_dto: dict | None = None
-    error_message: str | None = None
+    setting_id: int | None = Field(None, alias="settingId")
+    setting_dto: dict | None = Field(None, alias="settingDto")
+    error_message: str | None = Field(None, alias="errorMessage")
+
+    class Config:
+        """Allow both camelCase and snake_case access."""
+
+        populate_by_name = True
 
 
 class BatchDraftResponse(BaseModel):
-    """Response for batch create drafts."""
+    """Response for batch create drafts.
 
-    results: list[BatchDraftResult]
-    success_count: int
-    failure_count: int
-    total_count: int
+    Backend returns camelCase field names, so we use aliases.
+    """
+
+    results: list[BatchDraftResult] = Field(alias="items")
+    success_count: int = Field(alias="successCount")
+    failure_count: int = Field(alias="failureCount")
+    total_count: int = Field(alias="totalCount")
+
+    class Config:
+        """Allow both camelCase and snake_case access."""
+
+        populate_by_name = True
 
 
 class TemplateListResponse(BaseModel):

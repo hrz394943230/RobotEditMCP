@@ -72,28 +72,36 @@ class RobotEditMCPServer:
             try:
                 # Route to appropriate handler based on tool category
                 tool_categories = {
-                    # Draft tools
-                    "list_drafts": handle_draft_tool,
-                    "get_draft": handle_draft_tool,
-                    "create_draft": handle_draft_tool,
-                    "update_draft": handle_draft_tool,
-                    "delete_draft": handle_draft_tool,
-                    "batch_create_drafts": handle_draft_tool,
-                    "release_draft": handle_draft_tool,
-                    "get_factory_struct": handle_draft_tool,
-                    "trigger_draft_action": handle_draft_tool,
-                    # Online tools
-                    "list_online_configs": handle_online_tool,
-                    "get_online_config": handle_online_tool,
-                    "get_online_action_detail": handle_online_tool,
-                    "trigger_online_action": handle_online_tool,
-                    # Template tools
-                    "list_templates": handle_template_tool,
-                    "get_template": handle_template_tool,
-                    "apply_template": handle_template_tool,
-                    "save_as_template": handle_template_tool,
-                    "delete_template": handle_template_tool,
-                    # Metadata tools
+                    # Draft tools (12 tools)
+                    "draft_get_scenes": handle_draft_tool,
+                    "draft_get_factories": handle_draft_tool,
+                    "draft_get_factory_struct": handle_draft_tool,
+                    "draft_list": handle_draft_tool,
+                    "draft_get": handle_draft_tool,
+                    "draft_create": handle_draft_tool,
+                    "draft_update": handle_draft_tool,
+                    "draft_delete": handle_draft_tool,
+                    "draft_batch_create": handle_draft_tool,
+                    "draft_release": handle_draft_tool,
+                    "draft_save_as_template": handle_draft_tool,
+                    "draft_trigger_action": handle_draft_tool,
+                    # Online tools (7 tools)
+                    "online_get_scenes": handle_online_tool,
+                    "online_get_factories": handle_online_tool,
+                    "online_get_factory_struct": handle_online_tool,
+                    "online_list": handle_online_tool,
+                    "online_get": handle_online_tool,
+                    "online_get_action_detail": handle_online_tool,
+                    "online_trigger_action": handle_online_tool,
+                    # Template tools (7 tools)
+                    "template_get_scenes": handle_template_tool,
+                    "template_get_factories": handle_template_tool,
+                    "template_get_factory_struct": handle_template_tool,
+                    "template_list": handle_template_tool,
+                    "template_get": handle_template_tool,
+                    "template_apply": handle_template_tool,
+                    "template_delete": handle_template_tool,
+                    # Metadata tools (deprecated, 2 tools)
                     "list_scenes": handle_metadata_tool,
                     "list_factories": handle_metadata_tool,
                 }
