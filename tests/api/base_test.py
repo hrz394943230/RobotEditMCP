@@ -327,6 +327,41 @@ class BaseRobotTest:
 
         return draft_ids
 
+    # ===== Robot Configuration Setup =====
+
+    def create_test_robot_config(self, name_suffix: str = "robot") -> int:
+        """Create a simple ROBOT configuration for testing.
+
+        Creates a minimal ROBOT configuration without dependencies.
+        The brain and drive fields can be None for testing purposes.
+
+        Args:
+            name_suffix: Suffix for resource naming
+
+        Returns:
+            The ROBOT draft ID
+
+        Note:
+            This creates a simplified ROBOT config without brain/drive
+            dependencies, suitable for testing online config endpoints.
+        """
+        # Create a simple ROBOT configuration (brain and drive can be None)
+        robot_id = self.create_draft(
+            scene="ROBOT",
+            name="RobotDraftSetting",
+            setting_name=self._generate_resource_name(f"{name_suffix}_robot"),
+            config={
+                "nick_name": f"TestRobot_{name_suffix}",
+                "brain": None,  # Optional for testing
+                "drive": None,  # Optional for testing
+                "lock_timeout": 1800,
+                "wait_processing_timeout": 20
+            }
+        )
+
+        logger.info(f"Created simple ROBOT config: robot_id={robot_id}")
+        return robot_id
+
     # ===== Cleanup Methods =====
 
     def cleanup_all(self):

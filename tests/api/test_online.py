@@ -1,31 +1,32 @@
 """Integration tests for Online API endpoints.
 
 These tests verify online configuration endpoints that actually work.
+
+Note: Online configs are published configurations that cannot be deleted.
+Tests use existing online configs or require preparation via:
+    python tests/api/prepare_online_config.py
+
+Or set environment variable to skip online tests:
+    export SKIP_ONLINE_TESTS=true
 """
 
+import logging
+import os
 import pytest
 
 from roboteditmcp.client import RobotClient
 from .base_test import BaseRobotTest
+
+logger = logging.getLogger(__name__)
+
+# Check if online tests should be skipped
+SKIP_ONLINE_TESTS = os.getenv('SKIP_ONLINE_TESTS', '').lower() in ('true', '1', 'yes')
 
 
 @pytest.fixture
 def client(env_vars):
     """Create a RobotClient instance for testing."""
     return RobotClient()
-
-
-@pytest.fixture
-def sample_config(client: RobotClient):
-    """Get sample configuration from the API for test data generation."""
-    try:
-        configs = client.online.list_online_configs()
-        if configs:
-            return configs[0]
-    except Exception:
-        pass
-
-    return None
 
 
 class TestOnlineAPI(BaseRobotTest):
@@ -35,13 +36,36 @@ class TestOnlineAPI(BaseRobotTest):
     tracking is limited but base class provides consistent interface.
     """
 
+    def _get_any_online_config(self) -> tuple | None:
+        """Helper method to get any available online config.
+
+        Returns:
+            Tuple of (config_id, config) or None if no configs available
+        """
+        configs = self.client.online.list_online_configs()
+
+        if not configs:
+            return None
+
+        # Use the first available config
+        online_config = configs[0]
+        config_id = (online_config.get('settingId') or online_config.get('setting_id') or
+                    online_config.get('id'))
+
+        return config_id, online_config
+
     def test_list_online_configs(self):
         """Test GET /factory/online/query - List online configurations.
 
         Verifies:
         - Endpoint is accessible
         - Response contains list of online configs
+
+        Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
         """
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
         response = self.client.online.list_online_configs()
         assert isinstance(response, list), "Response should be a list"
 
@@ -52,19 +76,24 @@ class TestOnlineAPI(BaseRobotTest):
         - Endpoint is accessible with settingId parameter
         - Can retrieve online config details
 
-        Note: Uses staging environment's existing production configs.
-        The staging environment has production configurations that we can query.
+        Note:
+        - If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        - Requires existing online configurations in the environment.
+        - To prepare test data, run: python tests/api/prepare_online_config.py
         """
-        # Try to get online configs from staging
-        configs = self.client.online.list_online_configs()
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
 
-        if not configs:
-            pytest.skip("No online configurations available in staging environment")
+        result = self._get_any_online_config()
 
-        # Use the first available config
-        online_config = configs[0]
-        config_id = (online_config.get('settingId') or online_config.get('setting_id') or
-                    online_config.get('id'))
+        if result is None:
+            pytest.skip(
+                "No online configurations available. "
+                "Run 'python tests/api/prepare_online_config.py' to prepare test data, "
+                "or set SKIP_ONLINE_TESTS=true to skip online tests."
+            )
+
+        config_id, _ = result
 
         # Get single online config
         response = self.client.online.get_online_config(config_id)
@@ -80,7 +109,7 @@ class TestOnlineAPI(BaseRobotTest):
         """
         pytest.skip("Staging环境限制：仅支持readonly接口，Action Detail接口不可用")
 
-    def test_trigger_online_action(self, sample_config):
+    def test_trigger_online_action(self):
         """Test PUT /factory/online/:settingId/action/:action - Trigger action.
 
         Verifies:
@@ -92,12 +121,15 @@ class TestOnlineAPI(BaseRobotTest):
         - isAsync: boolean
         - isPrivate: boolean
         """
-        if sample_config is None:
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
+        result = self._get_any_online_config()
+
+        if result is None:
             pytest.skip("No online configurations available")
 
-        config = sample_config
-        config_id = (config.get('settingId') or config.get('setting_id') or
-                    config.get('id'))
+        config_id, config = result
 
         # Get available actions
         tfs_actions = (config.get('tfsActions') or config.get('tfs_actions', {}))
