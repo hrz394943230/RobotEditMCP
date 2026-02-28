@@ -5,13 +5,11 @@ The actual implementation is delegated to category-specific API classes:
 - DraftAPI: Draft configuration management
 - OnlineAPI: Production configuration management
 - TemplateAPI: Template management
-- MetadataAPI: Metadata discovery
 """
 
 import logging
 
 from roboteditmcp.api.draft import DraftAPI
-from roboteditmcp.api.metadata import MetadataAPI
 from roboteditmcp.api.online import OnlineAPI
 from roboteditmcp.api.template import TemplateAPI
 
@@ -36,7 +34,6 @@ class RobotClient:
         self.draft = DraftAPI()
         self.online = OnlineAPI()
         self.template = TemplateAPI()
-        self.metadata = MetadataAPI()
 
         logger.info("RobotClient initialized with specialized API modules")
 
@@ -318,32 +315,6 @@ class RobotClient:
         """
         return self.template.delete_template(setting_id)
 
-    # ========== Metadata Tools ==========
-
-    def list_scenes(self) -> list[str]:
-        """List all available scene types.
-
-        Returns:
-            List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
-        """
-        return self.metadata.list_scenes()
-
-    def list_factories(
-        self,
-        scene: str,
-        type: str = "draft",
-    ):
-        """List all factory types for a given scene.
-
-        Args:
-            scene: Scene type
-            type: Configuration type - "draft", "online", or "template"
-
-        Returns:
-            FactoryListResponse with factory_names list
-        """
-        return self.metadata.list_factories(scene, type)
-
     # ========== Resource Management ==========
 
     def close(self):
@@ -351,7 +322,6 @@ class RobotClient:
         self.draft.close()
         self.online.close()
         self.template.close()
-        self.metadata.close()
 
     def __enter__(self):
         """Context manager entry."""

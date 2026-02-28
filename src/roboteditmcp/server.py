@@ -10,11 +10,9 @@ from roboteditmcp.config import config
 from roboteditmcp.logging_config import setup_logging
 from roboteditmcp.tools import (
     handle_draft_tool,
-    handle_metadata_tool,
     handle_online_tool,
     handle_template_tool,
     register_draft_tools,
-    register_metadata_tools,
     register_online_tools,
     register_template_tools,
 )
@@ -54,7 +52,6 @@ class RobotEditMCPServer:
         all_tools.extend(register_draft_tools(self.client))
         all_tools.extend(register_online_tools(self.client))
         all_tools.extend(register_template_tools(self.client))
-        all_tools.extend(register_metadata_tools(self.client))
 
         logger.info(f"Registered {len(all_tools)} tools")
 
@@ -101,9 +98,6 @@ class RobotEditMCPServer:
                     "template_get": handle_template_tool,
                     "template_apply": handle_template_tool,
                     "template_delete": handle_template_tool,
-                    # Metadata tools (deprecated, 2 tools)
-                    "list_scenes": handle_metadata_tool,
-                    "list_factories": handle_metadata_tool,
                 }
 
                 if name not in tool_categories:

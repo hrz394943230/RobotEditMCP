@@ -161,14 +161,13 @@ class OnlineAPI(BaseAPI):
             ActionResult
         """
         # Backend uses PUT method with params as body
-        payload = {}
-        if params:
-            payload = params
+        # Important: Always pass a dict, even if empty (not None)
+        payload = params if params is not None else {}
 
         response = self.client.put(
             f"{self.base_url}/factory/online/{setting_id}/action/{action}",
             headers=self._get_headers(),
-            json=payload if payload else None,
+            json=payload,
         )
         data = self._handle_response(response)
         return ActionResult(**data)

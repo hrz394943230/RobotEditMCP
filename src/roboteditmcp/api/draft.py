@@ -308,7 +308,8 @@ class DraftAPI(BaseAPI):
         Returns:
             ActionResult
         """
-        body = params if params else {}
+        # Important: Always pass a dict, even if empty
+        body = params if params is not None else {}
 
         response = self.client.put(
             f"{self.base_url}/factory/drafts/{setting_id}/action/{action}",

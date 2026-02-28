@@ -79,9 +79,17 @@ class TemplateListResponse(BaseModel):
 
 
 class ApplyTemplateResponse(BaseModel):
-    """Response for apply template."""
+    """Response for apply template.
 
-    draft_id: int
+    Backend returns camelCase field names, so we use alias.
+    """
+
+    draft_id: int = Field(alias="draftId")
+
+    class Config:
+        """Allow both camelCase and snake_case access."""
+
+        populate_by_name = True
 
 
 class FactoryListResponse(BaseModel):

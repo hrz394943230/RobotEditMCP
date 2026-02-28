@@ -148,7 +148,7 @@ class TemplateAPI(BaseAPI):
         response = self.client.post(
             f"{self.base_url}/factory/templates/apply",
             headers=self._get_headers(),
-            json={"templateSettingId": templateSettingId},
+            params={"templateSettingId": templateSettingId},
         )
         data = self._handle_response(response)
         return ApplyTemplateResponse(**data)
