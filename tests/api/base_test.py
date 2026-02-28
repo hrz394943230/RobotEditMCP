@@ -329,38 +329,210 @@ class BaseRobotTest:
 
     # ===== Robot Configuration Setup =====
 
-    def create_test_robot_config(self, name_suffix: str = "robot") -> int:
-        """Create a simple ROBOT configuration for testing.
+    def create_minimal_robot_config(self, name_suffix: str = "robot") -> dict:
+        """Create a minimal but complete ROBOT configuration for testing.
 
-        Creates a minimal ROBOT configuration without dependencies.
-        The brain and drive fields can be None for testing purposes.
+        Creates all required dependencies for a ROBOT configuration:
+        - DOC_STORE (drive)
+        - CONVERSATION_MANAGER
+        - MEMORY (uses doc_store and conversation_manager)
+        - LLM provider
+        - CHAIN (uses llm) - optional, falls back to LLM directly if not available
+        - BRAIN (uses chain and memory)
+        - ROBOT (uses brain and drive)
 
         Args:
             name_suffix: Suffix for resource naming
 
         Returns:
-            The ROBOT draft ID
+            Dictionary with all created draft IDs
 
         Note:
-            This creates a simplified ROBOT config without brain/drive
-            dependencies, suitable for testing online config endpoints.
+            This creates a complete ROBOT config that can be released to production.
+            All drafts are automatically tracked for cleanup.
+            Some components may not be available in all environments (e.g., CHAIN).
         """
-        # Create a simple ROBOT configuration (brain and drive can be None)
+        draft_ids = {}
+
+        # 1. Create DOC_STORE (drive)
+        doc_store_id = self.create_draft(
+            scene="DOC_STORE",
+            name="PostgresDocStoreDraft",
+            setting_name=self._generate_resource_name(f"{name_suffix}_doc_store"),
+            config={
+                "name": f"TestDocStore_{name_suffix}",
+                "description": "Test document store for robot config"
+            }
+        )
+        draft_ids["doc_store"] = doc_store_id
+        logger.info(f"Created DOC_STORE: {doc_store_id}")
+
+        # 2. Create CONVERSATION_MANAGER (optional, may not be available)
+        conversation_manager_id = None
+        try:
+            conversation_manager_id = self.create_draft(
+                scene="CONVERSATION_MANAGER",
+                name="PGInjectedConversationManagerDraftSetting",
+                setting_name=self._generate_resource_name(f"{name_suffix}_conv_mgr"),
+                config={"platform_id": 1}
+            )
+            draft_ids["conversation_manager"] = conversation_manager_id
+            logger.info(f"Created CONVERSATION_MANAGER: {conversation_manager_id}")
+        except Exception as e:
+            logger.warning(f"CONVERSATION_MANAGER not available: {e}")
+
+        # 3. Create MEMORY (uses doc_store and conversation_manager if available)
+        memory_config = {
+            "docs": {
+                "setting_id": doc_store_id,
+                "category": "Draft"
+            },
+            "conversation_manager": {
+                "setting_id": conversation_manager_id,
+                "category": "Draft"
+            } if conversation_manager_id else None,
+            "memos": None,
+            "knowledge": None,
+            "recall_strict": False,
+            "top_k": 20,
+            "kg_format": "tfrobot",
+            "enable_kg_query_expansion": True
+        }
+
+        memory_id = None
+        try:
+            memory_id = self.create_draft(
+                scene="MEMORY",
+                name="AIMemoryDraftSetting",
+                setting_name=self._generate_resource_name(f"{name_suffix}_memory"),
+                config=memory_config
+            )
+            draft_ids["memory"] = memory_id
+            logger.info(f"Created MEMORY: {memory_id}")
+        except Exception as e:
+            logger.warning(f"MEMORY not available: {e}")
+
+        # 4. Create LLM provider
+        llm_id = self.create_draft(
+            scene="LLM",
+            name="GPT草稿",
+            setting_name=self._generate_resource_name(f"{name_suffix}_llm"),
+            config={
+                "input_price": 0,
+                "output_price": 0,
+                "name": f"test-gpt-model-{name_suffix}",
+                "context_window": 4096,
+                "system_msg_prompt": [],
+                "before_input_msg_prompt": [],
+                "after_input_msg_prompt": [],
+                "after_intermediate_msg_prompt": [],
+                "tool_filter": None,
+                "frequency_penalty": 0,
+                "max_tokens": 1024,
+                "top_p": 1,
+                "n": 1,
+                "presence_penalty": 0,
+                "temperature": 0.7,
+                "openai_api_key": "test-key-not-used",
+                "proxy_host": None,
+                "proxy_port": None,
+                "response_format": {"type": "text"},
+                "stream": False
+            }
+        )
+        draft_ids["llm"] = llm_id
+        logger.info(f"Created LLM: {llm_id}")
+
+        # 5. Create CHAIN (optional, may not be available)
+        chain_id = None
+        try:
+            chain_id = self.create_draft(
+                scene="CHAIN",
+                name="ChainDraft",
+                setting_name=self._generate_resource_name(f"{name_suffix}_chain"),
+                config={
+                    "llm": {
+                        "setting_id": llm_id,
+                        "category": "Draft"
+                    },
+                    "max_iterations": 5,
+                    "max_tokens": 4096,
+                    "tool_response_instructions": "Stop when done.",
+                    "enable_thinking": False,
+                    "enable_test_mode": True
+                }
+            )
+            draft_ids["chain"] = chain_id
+            logger.info(f"Created CHAIN: {chain_id}")
+        except Exception as e:
+            logger.warning(f"CHAIN not available, will use LLM directly: {e}")
+            # Use LLM ID as chain_id (for BRAIN configuration)
+            chain_id = llm_id
+
+        # 6. Create BRAIN (uses chain and optionally memory)
+        brain_config = {
+            "chain": {
+                "setting_id": chain_id,
+                "category": "Draft"
+            },
+            "memory": {
+                "setting_id": memory_id,
+                "category": "Draft"
+            } if memory_id else None,
+            "memory_chunk_size": 2048
+        }
+
+        brain_id = self.create_draft(
+            scene="BRAIN",
+            name="RobotBrainDraftSetting",
+            setting_name=self._generate_resource_name(f"{name_suffix}_brain"),
+            config=brain_config
+        )
+        draft_ids["brain"] = brain_id
+        logger.info(f"Created BRAIN: {brain_id}")
+
+        # 7. Create DRIVE (uses doc_store)
+        drive_id = self.create_draft(
+            scene="DRIVE",
+            name="RobotMarkIDraftSetting",
+            setting_name=self._generate_resource_name(f"{name_suffix}_drive"),
+            config={
+                "tool_set": [],
+                "exception_tips": {
+                    "error_suffix": "Test error suffix",
+                    "tool_not_found": "Test tool not found",
+                    "extraction_error": "Test extraction error"
+                },
+                "dock_tools": [],
+                "top_k": 5
+            }
+        )
+        draft_ids["drive"] = drive_id
+        logger.info(f"Created DRIVE: {drive_id}")
+
+        # 8. Create ROBOT (uses brain and drive)
         robot_id = self.create_draft(
             scene="ROBOT",
             name="RobotDraftSetting",
             setting_name=self._generate_resource_name(f"{name_suffix}_robot"),
             config={
                 "nick_name": f"TestRobot_{name_suffix}",
-                "brain": None,  # Optional for testing
-                "drive": None,  # Optional for testing
+                "brain": {
+                    "setting_id": brain_id,
+                    "category": "Draft"
+                },
+                "drive": {
+                    "setting_id": drive_id,
+                    "category": "Draft"
+                },
                 "lock_timeout": 1800,
                 "wait_processing_timeout": 20
             }
         )
+        draft_ids["robot"] = robot_id
+        logger.info(f"Created ROBOT: {robot_id}")
 
-        logger.info(f"Created simple ROBOT config: robot_id={robot_id}")
-        return robot_id
+        return draft_ids
 
     # ===== Cleanup Methods =====
 

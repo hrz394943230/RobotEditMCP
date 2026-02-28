@@ -192,27 +192,29 @@ class TestDraftAPI(BaseRobotTest):
     def test_release_draft(self):
         """Test POST /factory/drafts/release - Release all drafts to production.
 
-        Note: This test creates a minimal draft and attempts release.
-        Release may fail if drafts are not properly configured, which is acceptable.
-        """
-        # Create a minimal draft for testing release
-        # Note: release_draft() releases ALL drafts, not just this one
-        _ = self.create_draft(
-            scene=self.DEFAULT_TEST_SCENE,
-            name=self.DEFAULT_TEST_FACTORY,
-            config={
-                "name": "TestReleaseDraft",
-                "description": "Test for release_draft API"
-            },
-        )
+        Verifies:
+        - Endpoint releases drafts to production environment
+        - Response contains release confirmation
 
-        try:
-            response = self.client.draft.release_draft()
-            assert isinstance(response, dict), "Response should be a dict"
-        except Exception as e:
-            # Release may fail if drafts are not properly configured
-            # This is acceptable behavior for this test
-            pytest.skip(f"Release failed (expected for minimal config): {e}")
+        Note: This test creates a complete ROBOT configuration (including
+        all dependencies like DOC_STORE, MEMORY, LLM, CHAIN, BRAIN, DRIVE)
+        and attempts to release it. The release_draft() API releases ALL
+        drafts in the system, not just the ones created for this test.
+        """
+        # Create a complete ROBOT configuration for testing release
+        # This includes: DOC_STORE, CONVERSATION_MANAGER, MEMORY, LLM, CHAIN, BRAIN, DRIVE, ROBOT
+        draft_ids = self.create_minimal_robot_config(name_suffix="release_test")
+
+        # Verify ROBOT was created
+        assert draft_ids["robot"] is not None
+        assert draft_ids["robot"] > 0
+
+        # Attempt to release all drafts to production
+        # Note: release_draft() releases ALL drafts, not just the ones we created
+        response = self.client.draft.release_draft()
+        assert isinstance(response, dict), "Response should be a dict"
+        # Response should contain onlineRobotId or similar confirmation
+        assert response is not None
 
     def test_save_as_template(self):
         """Test POST /factory/drafts/:draftId/savetemplate - Save draft as template.
