@@ -6,6 +6,7 @@ These tests verify online configuration endpoints that actually work.
 import pytest
 
 from roboteditmcp.client import RobotClient
+from .base_test import BaseRobotTest
 
 
 @pytest.fixture
@@ -15,55 +16,59 @@ def client(env_vars):
 
 
 @pytest.fixture
-def test_data(client: RobotClient):
-    """Get real test data from the API."""
+def sample_config(client: RobotClient):
+    """Get sample configuration from the API for test data generation."""
     try:
         configs = client.online.list_online_configs()
         if configs:
-            return {'has_online': True, 'configs': configs, 'sample': configs[0]}
+            return configs[0]
     except Exception:
         pass
 
-    return {'has_online': False}
+    return None
 
 
-class TestOnlineAPI:
-    """Test cases for Online API endpoints (focused on working endpoints)."""
+class TestOnlineAPI(BaseRobotTest):
+    """Test cases for Online API endpoints (focused on working endpoints).
 
-    def test_1_list_online_configs(self, client: RobotClient):
+    Note: Online configs typically don't support deletion, so resource
+    tracking is limited but base class provides consistent interface.
+    """
+
+    def test_list_online_configs(self):
         """Test GET /factory/online/query - List online configurations.
 
         Verifies:
         - Endpoint is accessible
         - Response contains list of online configs
         """
-        response = client.online.list_online_configs()
+        response = self.client.online.list_online_configs()
         assert isinstance(response, list), "Response should be a list"
 
-    def test_2_get_online_config(self, client: RobotClient, test_data):
+    def test_get_online_config(self, sample_config):
         """Test GET /factory/online/:settingId - Get single online config.
 
         Verifies:
         - Endpoint is accessible with settingId parameter
         """
-        if not test_data.get('has_online'):
+        if sample_config is None:
             pytest.skip("No online configurations available")
 
-        config = test_data['sample']
+        config = sample_config
         config_id = (config.get('settingId') or config.get('setting_id') or
                     config.get('id'))
 
-        response = client.online.get_online_config(config_id)
+        response = self.client.online.get_online_config(config_id)
         assert isinstance(response, dict), "Response should be a dict"
 
-    def test_3_get_online_action_detail(self, client: RobotClient, test_data):
+    def test_get_online_action_detail(self):
         """Test GET /factory/online/:settingId/action/:action/detail - Get action detail.
 
         Note: This endpoint is restricted in staging environment (readonly only).
         """
         pytest.skip("Staging环境限制：仅支持readonly接口，Action Detail接口不可用")
 
-    def test_4_trigger_online_action(self, client: RobotClient, test_data):
+    def test_trigger_online_action(self, sample_config):
         """Test PUT /factory/online/:settingId/action/:action - Trigger action.
 
         Verifies:
@@ -75,10 +80,10 @@ class TestOnlineAPI:
         - isAsync: boolean
         - isPrivate: boolean
         """
-        if not test_data.get('has_online'):
+        if sample_config is None:
             pytest.skip("No online configurations available")
 
-        config = test_data['sample']
+        config = sample_config
         config_id = (config.get('settingId') or config.get('setting_id') or
                     config.get('id'))
 
@@ -112,7 +117,7 @@ class TestOnlineAPI:
                 if 'default' in param_def:
                     params[param_name] = param_def['default']
 
-        response = client.online.trigger_online_action(
+        response = self.client.online.trigger_online_action(
             setting_id=config_id,
             action=action_name,
             params=params if params else {},  # Always pass a dict

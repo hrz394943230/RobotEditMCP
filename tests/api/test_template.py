@@ -6,6 +6,7 @@ These tests verify template configuration endpoints that actually work.
 import pytest
 
 from roboteditmcp.client import RobotClient
+from .base_test import BaseRobotTest
 
 
 @pytest.fixture
@@ -15,26 +16,26 @@ def client(env_vars):
 
 
 @pytest.fixture
-def test_data(client: RobotClient):
-    """Get real test data from the API."""
+def sample_config(client: RobotClient):
+    """Get sample configuration from the API for test data generation."""
     drafts = client.draft.list_drafts()
     if not drafts:
         pytest.skip("No drafts available")
 
-    return {'sample': drafts[0]}
+    return drafts[0]
 
 
-class TestTemplateAPI:
+class TestTemplateAPI(BaseRobotTest):
     """Test cases for Template API endpoints (focused on working endpoints)."""
 
-    def test_1_list_templates(self, client: RobotClient):
+    def test_list_templates(self):
         """Test GET /factory/templates/query - List templates.
 
         Verifies:
         - Endpoint is accessible
         """
         try:
-            response = client.template.list_templates(
+            response = self.client.template.list_templates(
                 page=1,
                 pageSize=10,
             )
@@ -42,63 +43,46 @@ class TestTemplateAPI:
         except Exception as e:
             pytest.skip(f"list_templates failed: {e}")
 
-    def test_2_apply_template(self, client: RobotClient, test_data):
+    def test_apply_template(self, sample_config):
         """Test POST /factory/templates/apply - Apply template to create draft.
 
         Verifies:
         - Endpoint creates draft from template
+        - teardown auto-cleanup both template and created draft
         """
-        draft = test_data['sample']
+        draft = sample_config
         draft_id = (draft.get('settingId') or draft.get('setting_id') or
                    draft.get('id'))
         factory_name = draft.get('name')
 
-        # First save as template (only send required 'name' parameter)
-        template_response = client.draft.save_as_template(
-            draft_id=draft_id,
-            name=factory_name,
-        )
+        # Create template using base class method (auto-tracked)
+        template_id = self.create_template(draft_id, name=factory_name)
 
-        template_id = (template_response.get("templateId") or
-                      template_response.get("template_id") or
-                      template_response.get("id"))
+        # Apply the template using base class method (auto-tracked)
+        new_draft_id = self.create_draft_from_template(template_id)
 
-        # Now apply the template
-        response = client.template.apply_template(
-            templateSettingId=template_id
-        )
-        assert response is not None, "Response should not be None"
+        # Verify creation success
+        assert new_draft_id is not None
+        assert new_draft_id > 0
 
-        # Cleanup
-        try:
-            if template_id:
-                client.template.delete_template(template_id)
-            draft_id_new = response.draft_id if hasattr(response, 'draft_id') else None
-            if draft_id_new:
-                client.draft.delete_draft(draft_id_new)
-        except Exception:
-            pass
-
-    def test_3_delete_template(self, client: RobotClient, test_data):
+    def test_delete_template(self, sample_config):
         """Test DELETE /factory/templates/:settingId - Delete template.
 
         Verifies:
         - Endpoint deletes template
+        - teardown won't duplicate delete (removed from tracking list)
         """
-        draft = test_data['sample']
+        draft = sample_config
         draft_id = (draft.get('settingId') or draft.get('setting_id') or
                    draft.get('id'))
         factory_name = draft.get('name')
 
-        # Create a template (only send required 'name' parameter)
-        template_response = client.draft.save_as_template(
-            draft_id=draft_id,
-            name=factory_name,
-        )
-        template_id = (template_response.get("templateId") or
-                      template_response.get("template_id") or
-                      template_response.get("id"))
+        # Create template using base class method (auto-tracked)
+        template_id = self.create_template(draft_id, name=factory_name)
+
+        # Remove from tracking list (we manually test delete)
+        self._resources[self.RESOURCE_TEMPLATE].remove(template_id)
 
         # Delete the template
-        delete_response = client.template.delete_template(template_id)
+        delete_response = self.client.template.delete_template(template_id)
         assert isinstance(delete_response, dict), "Delete response should be a dict"
