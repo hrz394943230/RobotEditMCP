@@ -33,6 +33,9 @@ class TestTemplateAPI(BaseRobotTest):
 
         Verifies:
         - Endpoint is accessible
+
+        Note: This endpoint may return 500 error in staging environments
+        due to backend validation issues with empty or malformed template data.
         """
         try:
             response = self.client.template.list_templates(
@@ -40,8 +43,19 @@ class TestTemplateAPI(BaseRobotTest):
                 pageSize=10,
             )
             assert response is not None, "Response should not be None"
+            # If we get here, the endpoint works
+            assert hasattr(response, 'templates'), "Response should have templates field"
+            assert hasattr(response, 'total'), "Response should have total field"
         except Exception as e:
-            pytest.skip(f"list_templates failed: {e}")
+            # Check if it's a backend validation error (code 601)
+            error_str = str(e)
+            if "601" in error_str or "500" in error_str:
+                pytest.skip(
+                    f"list_templates endpoint returned backend error (likely data/validation issue in staging): {error_str[:200]}"
+                )
+            else:
+                # Re-raise other exceptions
+                raise
 
     def test_apply_template(self, sample_config):
         """Test POST /factory/templates/apply - Apply template to create draft.

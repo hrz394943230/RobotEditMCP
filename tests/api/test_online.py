@@ -45,21 +45,33 @@ class TestOnlineAPI(BaseRobotTest):
         response = self.client.online.list_online_configs()
         assert isinstance(response, list), "Response should be a list"
 
-    def test_get_online_config(self, sample_config):
+    def test_get_online_config(self):
         """Test GET /factory/online/:settingId - Get single online config.
 
         Verifies:
         - Endpoint is accessible with settingId parameter
+        - Can retrieve online config details
+
+        Note: Uses staging environment's existing production configs.
+        The staging environment has production configurations that we can query.
         """
-        if sample_config is None:
-            pytest.skip("No online configurations available")
+        # Try to get online configs from staging
+        configs = self.client.online.list_online_configs()
 
-        config = sample_config
-        config_id = (config.get('settingId') or config.get('setting_id') or
-                    config.get('id'))
+        if not configs:
+            pytest.skip("No online configurations available in staging environment")
 
+        # Use the first available config
+        online_config = configs[0]
+        config_id = (online_config.get('settingId') or online_config.get('setting_id') or
+                    online_config.get('id'))
+
+        # Get single online config
         response = self.client.online.get_online_config(config_id)
+
+        # Verify response
         assert isinstance(response, dict), "Response should be a dict"
+        assert response.get('settingId') or response.get('setting_id'), "Should have config ID"
 
     def test_get_online_action_detail(self):
         """Test GET /factory/online/:settingId/action/:action/detail - Get action detail.

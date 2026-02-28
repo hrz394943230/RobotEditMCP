@@ -108,7 +108,7 @@ class TemplateAPI(BaseAPI):
             params["templateName"] = templateName
 
         response = self.client.get(
-            f"{self.base_url}/factory/templates/query",
+            f"{self.base_url}/factory/template/settings",
             headers=self._get_headers(),
             params=params,
         )

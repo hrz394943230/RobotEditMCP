@@ -188,33 +188,65 @@ class TestDraftAPI(BaseRobotTest):
         assert template_id is not None
         assert template_id > 0
 
-    def test_trigger_draft_action(self, sample_config):
+    def test_trigger_draft_action(self):
         """Test PUT /factory/drafts/:settingId/action/:action - Trigger action.
 
         Verifies:
         - Endpoint triggers action on draft
+        - Action can render template with parameters
+
+        Uses PROMPT_TEMPLATE scene with a simple template that includes
+        a parameter placeholder. When rendered with name='张三', should
+        return '你是谁张三'.
         """
-        draft = sample_config
-        draft_id = (draft.get('settingId') or draft.get('setting_id') or
-                   draft.get('id'))
+        # Create a PROMPT_TEMPLATE draft with a simple f-string template
+        draft_id = self.create_draft(
+            scene="PROMPT_TEMPLATE",
+            name="FStrTemplateDraft",
+            config={
+                "templates": {
+                    "zh": "你是谁{name}"
+                },
+                "active_language": "zh",
+                "params_schema": {
+                    "type": "object",
+                    "title": "Params",
+                    "properties": {
+                        "name": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Name",
+                            "default": None
+                        }
+                    }
+                }
+            }
+        )
 
-        # Try to get factory struct first (may fail on staging)
-        try:
-            factory_name = draft.get('name')
-            factory_struct = self.client.draft.get_draft_factory_struct(
-                factoryName=factory_name
-            )
-            tfs_actions = (factory_struct.get("tfsActions") or
-                          factory_struct.get("tfs_actions", {}))
+        # Trigger the 'render' action with parameter
+        # Request body: {"params": {"name": "张三"}}
+        # Note: render action returns a string directly, not ActionResult
+        # So we need to call the underlying API directly
+        response = self.client.draft.client.put(
+            f"{self.client.draft.base_url}/factory/drafts/{draft_id}/action/render",
+            headers=self.client.draft._get_headers(),
+            json={"params": {"name": "张三"}}
+        )
 
-            if tfs_actions:
-                action_name = list(tfs_actions.keys())[0]
-                response = self.client.draft.trigger_draft_action(
-                    setting_id=draft_id,
-                    action=action_name,
-                    params={},
-                )
-                assert response is not None, "Response should not be None"
-        except Exception:
-            # Factory struct endpoint may not work on staging
-            pytest.skip("Factory struct endpoint not available")
+        # Handle the response
+        response_data = response.json()
+        assert response_data.get("code") == 200, f"API returned error: {response_data}"
+
+        # Extract the result from response
+        result = response_data.get("data")
+
+        # Verify the rendered output
+        result_str = str(result)
+        assert "你是谁张三" in result_str, \
+            f"Template should render '你是谁张三', got: {result_str}"
