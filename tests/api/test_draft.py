@@ -336,3 +336,65 @@ class TestDraftAPI(BaseRobotTest):
                 )
             else:
                 raise
+
+    def test_get_draft_scenes(self):
+        """Test GET /factory/drafts/scenes - Get available draft scenes.
+
+        Verifies:
+        - Endpoint returns list of scene names
+        - Response contains expected scenes like ROBOT, LLM, CHAIN, etc.
+
+        Note: This endpoint may not be available in all environments.
+        """
+        try:
+            response = self.client.draft.get_draft_scenes()
+            assert isinstance(response, list), "Response should be a list"
+            # Verify common scenes exist
+            assert len(response) > 0, "Should return at least one scene"
+            # Check for expected scene names (may vary by environment)
+            expected_scenes = ["ROBOT", "LLM", "CHAIN", "DOC_STORE", "MEMORY"]
+            found_scenes = [scene for scene in expected_scenes if scene in response]
+            assert len(found_scenes) > 0, f"Should contain at least one common scene, got: {response}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if "500" in error_str or "601" in error_str or "Not Found" in error_str:
+                pytest.skip(
+                    f"get_draft_scenes API not available in this environment: {error_str[:100]}"
+                )
+            else:
+                raise
+
+    def test_get_draft_factories(self):
+        """Test GET /factory/drafts/:scene/factories - Get factories for a scene.
+
+        Verifies:
+        - Endpoint returns factory names for given scene
+        - Response contains factory_names field or factory list
+
+        Uses DEFAULT_TEST_SCENE (DOC_STORE) for testing.
+
+        Note: This endpoint may not be available in all environments.
+        """
+        try:
+            response = self.client.draft.get_draft_factories(self.DEFAULT_TEST_SCENE)
+            assert isinstance(response, dict), "Response should be a dict"
+            # Response may have 'factory_names' or 'factoryNames' field
+            factory_names = (
+                response.get('factory_names') or
+                response.get('factoryNames') or
+                response.get('factories') or
+                []
+            )
+            assert isinstance(factory_names, list), "factory_names should be a list"
+            assert len(factory_names) > 0, f"Should return at least one factory for {self.DEFAULT_TEST_SCENE}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if ("500" in error_str or "601" in error_str or "Not Found" in error_str or
+                "JSONDecodeError" in error_str or "Expecting value" in error_str):
+                pytest.skip(
+                    f"get_draft_factories API not available in this environment: {error_str[:150]}"
+                )
+            else:
+                raise

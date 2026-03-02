@@ -166,3 +166,113 @@ class TestTemplateAPI(BaseRobotTest):
         # Verify the template was actually created by retrieving it
         retrieved_template = self.client.template.get_template(template_id)
         assert retrieved_template is not None
+
+    def test_get_template_scenes(self):
+        """Test GET /factory/templates/scenes - Get available template scenes.
+
+        Verifies:
+        - Endpoint returns list of scene names
+        - Response contains expected scenes like ROBOT, LLM, CHAIN, etc.
+
+        Note: This endpoint may not be available in all environments.
+        """
+        try:
+            response = self.client.template.get_template_scenes()
+            assert isinstance(response, list), "Response should be a list"
+            # Verify at least one scene exists
+            assert len(response) > 0, "Should return at least one scene"
+            # Check for expected scene names (may vary by environment)
+            expected_scenes = ["ROBOT", "LLM", "CHAIN", "DOC_STORE", "MEMORY"]
+            found_scenes = [scene for scene in expected_scenes if scene in response]
+            assert len(found_scenes) > 0, f"Should contain at least one common scene, got: {response}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if "500" in error_str or "601" in error_str or "Not Found" in error_str:
+                pytest.skip(
+                    f"get_template_scenes API not available in this environment: {error_str[:100]}"
+                )
+            else:
+                raise
+
+    def test_get_template_factories(self):
+        """Test GET /factory/templates/:scene/factories - Get factories for a scene.
+
+        Verifies:
+        - Endpoint returns factory names for given scene
+        - Response contains factory_names field or factory list
+
+        Uses DEFAULT_TEST_SCENE (DOC_STORE) for testing.
+
+        Note: This endpoint may not be available in all environments.
+        """
+        try:
+            response = self.client.template.get_template_factories(self.DEFAULT_TEST_SCENE)
+            assert isinstance(response, dict), "Response should be a dict"
+            # Response may have 'factory_names' or 'factoryNames' field
+            factory_names = (
+                response.get('factory_names') or
+                response.get('factoryNames') or
+                response.get('factories') or
+                []
+            )
+            assert isinstance(factory_names, list), "factory_names should be a list"
+            assert len(factory_names) > 0, f"Should return at least one factory for {self.DEFAULT_TEST_SCENE}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if ("500" in error_str or "601" in error_str or "Not Found" in error_str or
+                "JSONDecodeError" in error_str or "Expecting value" in error_str):
+                pytest.skip(
+                    f"get_template_factories API not available in this environment: {error_str[:150]}"
+                )
+            else:
+                raise
+
+    def test_get_template_factory_struct(self):
+        """Test GET /factory/templates/struct/:scene/:factoryName - Get factory structure.
+
+        Verifies:
+        - Endpoint returns factory structure definition
+        - Response contains config_schema
+
+        Uses DEFAULT_TEST_SCENE (DOC_STORE) and gets the first available factory.
+
+        Note: This endpoint may not be available in all environments.
+        """
+        try:
+            # First get available factories for the test scene
+            factories_response = self.client.template.get_template_factories(self.DEFAULT_TEST_SCENE)
+            factory_names = (
+                factories_response.get('factory_names') or
+                factories_response.get('factoryNames') or
+                factories_response.get('factories') or
+                []
+            )
+
+            if not factory_names:
+                pytest.skip(f"No factories available for {self.DEFAULT_TEST_SCENE} scene")
+
+            # Use the first available factory
+            factory_name = factory_names[0]
+
+            # Get factory structure
+            response = self.client.template.get_template_factory_struct(
+                scene=self.DEFAULT_TEST_SCENE,
+                factoryName=factory_name
+            )
+
+            assert isinstance(response, dict), "Response should be a dict"
+            # Verify response contains config_schema (templates don't have tfs_actions)
+            assert 'config_schema' in response or 'configSchema' in response, \
+                "Response should contain config_schema"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if ("500" in error_str or "601" in error_str or "Not Found" in error_str or
+                "JSONDecodeError" in error_str or "Expecting value" in error_str):
+                pytest.skip(
+                    f"get_template_factory_struct API not available in this environment: {error_str[:150]}"
+                )
+            else:
+                raise

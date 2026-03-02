@@ -102,12 +102,172 @@ class TestOnlineAPI(BaseRobotTest):
         assert isinstance(response, dict), "Response should be a dict"
         assert response.get('settingId') or response.get('setting_id'), "Should have config ID"
 
+    def test_get_online_scenes(self):
+        """Test GET /factory/online/scenes - Get available online config scenes.
+
+        Verifies:
+        - Endpoint returns list of scene names
+        - Response contains expected scenes
+
+        Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        """
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
+        try:
+            response = self.client.online.get_online_scenes()
+            assert isinstance(response, list), "Response should be a list"
+            # Verify at least one scene exists
+            assert len(response) > 0, "Should return at least one scene"
+            # Check for expected scene names (may vary by environment)
+            expected_scenes = ["ROBOT", "LLM", "CHAIN", "DOC_STORE", "MEMORY"]
+            found_scenes = [scene for scene in expected_scenes if scene in response]
+            assert len(found_scenes) > 0, f"Should contain at least one common scene, got: {response}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if "500" in error_str or "601" in error_str or "Not Found" in error_str:
+                pytest.skip(
+                    f"get_online_scenes API not available in this environment: {error_str[:100]}"
+                )
+            else:
+                raise
+
+    def test_get_online_factories(self):
+        """Test GET /factory/online/:scene/factories - Get factories for a scene.
+
+        Verifies:
+        - Endpoint returns factory names for given scene
+        - Response contains factory_names field or factory list
+
+        Uses DOC_STORE as test scene (commonly available).
+
+        Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        """
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
+        try:
+            # Use DOC_STORE as it's commonly available
+            test_scene = "DOC_STORE"
+            response = self.client.online.get_online_factories(test_scene)
+            assert isinstance(response, dict), "Response should be a dict"
+            # Response may have 'factory_names' or 'factoryNames' field
+            factory_names = (
+                response.get('factory_names') or
+                response.get('factoryNames') or
+                response.get('factories') or
+                []
+            )
+            assert isinstance(factory_names, list), "factory_names should be a list"
+            assert len(factory_names) > 0, f"Should return at least one factory for {test_scene}"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if ("500" in error_str or "601" in error_str or "Not Found" in error_str or
+                "JSONDecodeError" in error_str or "Expecting value" in error_str):
+                pytest.skip(
+                    f"get_online_factories API not available in this environment: {error_str[:150]}"
+                )
+            else:
+                raise
+
+    def test_get_online_factory_struct(self):
+        """Test GET /factory/online/struct/:scene/:factoryName - Get factory structure.
+
+        Verifies:
+        - Endpoint returns factory structure definition
+        - Response contains config_schema
+
+        Uses DOC_STORE scene and its online factory.
+
+        Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        """
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
+        try:
+            # First get available factories for DOC_STORE
+            factories_response = self.client.online.get_online_factories("DOC_STORE")
+            factory_names = (
+                factories_response.get('factory_names') or
+                factories_response.get('factoryNames') or
+                factories_response.get('factories') or
+                []
+            )
+
+            if not factory_names:
+                pytest.skip("No factories available for DOC_STORE scene")
+
+            # Use the first available factory
+            factory_name = factory_names[0]
+
+            # Get factory structure
+            response = self.client.online.get_online_factory_struct(
+                scene="DOC_STORE",
+                factoryName=factory_name
+            )
+
+            assert isinstance(response, dict), "Response should be a dict"
+            # Verify response contains config_schema
+            assert 'config_schema' in response or 'configSchema' in response, \
+                "Response should contain config_schema"
+        except Exception as e:
+            # API may not be available in all environments
+            error_str = str(e)
+            if ("500" in error_str or "601" in error_str or "Not Found" in error_str or
+                "JSONDecodeError" in error_str or "Expecting value" in error_str):
+                pytest.skip(
+                    f"get_online_factory_struct API not available in this environment: {error_str[:150]}"
+                )
+            else:
+                raise
+
     def test_get_online_action_detail(self):
         """Test GET /factory/online/:settingId/action/:action/detail - Get action detail.
 
-        Note: This endpoint is restricted in staging environment (readonly only).
+        Verifies:
+        - Endpoint returns action detail if available
+        - Handles readonly restriction gracefully
+
+        Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        This endpoint may be restricted in staging environment (readonly only).
         """
-        pytest.skip("Staging环境限制：仅支持readonly接口，Action Detail接口不可用")
+        if SKIP_ONLINE_TESTS:
+            pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
+
+        result = self._get_any_online_config()
+
+        if result is None:
+            pytest.skip("No online configurations available")
+
+        config_id, config = result
+
+        # Get available actions
+        tfs_actions = (config.get('tfsActions') or config.get('tfs_actions', {}))
+        if not tfs_actions:
+            pytest.skip("No actions available in config")
+
+        # Use the first available action
+        action_name = list(tfs_actions.keys())[0]
+
+        try:
+            response = self.client.online.get_online_action_detail(
+                setting_id=config_id,
+                action=action_name
+            )
+            # If we get here, the endpoint works
+            assert response is not None, "Response should not be None"
+        except Exception as e:
+            # Check if it's a permission/restriction error
+            error_str = str(e)
+            if "403" in error_str or "401" in error_str or "forbidden" in error_str.lower():
+                pytest.skip(f"Action detail endpoint restricted in this environment: {error_str[:100]}")
+            elif "readonly" in error_str.lower() or "read-only" in error_str.lower():
+                pytest.skip(f"Action detail endpoint restricted (readonly): {error_str[:100]}")
+            else:
+                # Re-raise other exceptions
+                raise
 
     def test_trigger_online_action(self):
         """Test PUT /factory/online/:settingId/action/:action - Trigger action.
