@@ -247,41 +247,66 @@ class TestDraftAPI(BaseRobotTest):
 
         Verifies:
         - Endpoint triggers action on draft
-        - Action returns result (can be dict, list, or other types)
+        - Action parameters are correctly passed and processed
+        - Response data is properly extracted and returned
 
-        Uses DOC_STORE with 'aget_platforms' action which returns platform list.
-        This action requires no parameters and is async (indicated by 'a' prefix).
+        Uses PROMPT_TEMPLATE with 'render' action which demonstrates:
+        - Template rendering with dynamic parameters
+        - Parameter wrapping in {"params": {...}} format
+        - Direct return of rendered data (extraction from TFSResponse.data)
+
+        Note: The trigger_draft_action method automatically extracts the 'data' field
+        from the TFSResponse, so for render action, it returns the rendered string directly,
+        not the full response object with code/message.
         """
-        # Create a DOC_STORE draft which has multiple actions available
+        # Create a PROMPT_TEMPLATE draft with a template that uses parameters
         draft_id = self.create_draft(
-            scene="DOC_STORE",
-            name="PostgresDocStoreDraft",
+            scene="PROMPT_TEMPLATE",
+            name="FStrTemplateDraft",
+            setting_name="未命名",
             config={
-                "name": "TestTriggerAction",
-                "description": "Test for trigger_draft_action API"
+                "templates": {
+                    "zh": "你好吗{name}"
+                },
+                "active_language": "zh",
+                "params_schema": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        }
+                    },
+                    "required": ["name"]
+                }
             }
         )
 
-        # Get the draft to verify it has actions
+        # Get the draft to verify it has render action
         draft_detail = self.client.draft.get_draft(draft_id)
         tfs_actions = (draft_detail.get('tfsActions') or
                       draft_detail.get('tfs_actions', {}))
 
-        # Verify the draft has actions
-        assert len(tfs_actions) > 0, "Draft should have actions available"
+        # Verify the draft has render action
+        assert "render" in tfs_actions, "PROMPT_TEMPLATE should have render action"
 
-        # Use 'aget_platforms' action which is async and doesn't require params
-        action_name = "aget_platforms"
-        assert action_name in tfs_actions, f"Draft should have {action_name} action"
-
-        # Trigger the action with empty params
-        result = self.client.draft.trigger_draft_action(draft_id, action_name, {})
+        # Trigger the render action with parameters
+        # Note: render action expects params to be wrapped in a "params" key
+        # The backend API expects: {"params": {"name": "张三"}}
+        action_name = "render"
+        params = {"params": {"name": "张三"}}
+        result = self.client.draft.trigger_draft_action(draft_id, action_name, params)
 
         # Verify the result
-        # The action returns a list of platforms: [[id, name], ...]
+        # The trigger_draft_action method extracts TFSResponse.data automatically
+        # Original API response: {"data":"你好吗张三","code":200,"message":"Success"}
+        # After extraction: result = "你好吗张三" (string)
         assert result is not None, "Action should return a result"
-        # Result can be a list or dict, just verify it's not None
-        # We don't check specific content as it depends on the environment
+        assert isinstance(result, str), f"Result should be a string, got {type(result)}"
+        assert result == "你好吗张三", f"Expected '你好吗张三', got '{result}'"
+
+        # Note: The actual API returns full TFSResponse format:
+        # {"data":"你好吗张三","code":200,"message":"Success"}
+        # But trigger_draft_action automatically extracts the 'data' field for convenience
 
     def test_get_draft_scenes(self):
         """Test GET /factory/draft-scenes - Get available draft scenes.
