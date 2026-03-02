@@ -60,40 +60,9 @@ Use this to discover available factory types before creating configurations.""",
             },
         ),
         # ========================================
-        # Factory Structure (1)
-        # ========================================
-        # 3. draft_get_factory_struct
-        Tool(
-            name="draft_get_factory_struct",
-            description="""Get draft factory structure definition.
-
-IMPORTANT: Only requires factoryName parameter, NOT scene!
-
-Use this to understand:
-- config_schema: Schema for configurations of this factory type
-- tfs_actions: All actions supported by this factory type
-
-Ideal for exploring factory types without needing a specific configuration instance.
-
-Parameters:
-- factoryName: Factory name (e.g., 'RobotBrainDraftSetting')
-
-Returns DraftFactoryStructDto.""",
-            inputSchema={
-                "type": "object",
-                "required": ["factoryName"],
-                "properties": {
-                    "factoryName": {
-                        "type": "string",
-                        "description": "Factory name (e.g., 'RobotBrainDraftSetting')",
-                    },
-                },
-            },
-        ),
-        # ========================================
         # CRUD Operations (6)
         # ========================================
-        # 4. draft_list
+        # 3. draft_list
         Tool(
             name="draft_list",
             description="""List draft configurations with optional filters.
@@ -409,10 +378,6 @@ async def handle_draft_tool(
         "draft_get_scenes": lambda: client.draft.get_draft_scenes(),
         "draft_get_factories": lambda: client.draft.get_draft_factories(
             scene=arguments["scene"],
-        ),
-        # Factory Structure
-        "draft_get_factory_struct": lambda: client.draft.get_draft_factory_struct(
-            factoryName=arguments["factoryName"],
         ),
         # CRUD
         "draft_list": lambda: client.draft.list_drafts(

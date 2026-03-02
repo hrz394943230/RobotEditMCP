@@ -4,7 +4,6 @@ Provides automatic resource tracking and cleanup for test isolation.
 """
 
 import logging
-from typing import Dict, List, Optional
 
 from roboteditmcp.client import RobotClient
 
@@ -34,8 +33,8 @@ class BaseRobotTest:
 
         Initializes client reference and resource tracking containers.
         """
-        self._client: Optional[RobotClient] = None
-        self._resources: Dict[str, List[int]] = {
+        self._client: RobotClient | None = None
+        self._resources: dict[str, list[int]] = {
             self.RESOURCE_DRAFT: [],
             self.RESOURCE_TEMPLATE: [],
             self.RESOURCE_ONLINE: [],
@@ -91,7 +90,7 @@ class BaseRobotTest:
             # Online configs usually don't support direct deletion
             logger.warning(f"Online resource doesn't support deletion: id={resource_id}")
 
-    def _generate_cleanup_report(self, errors: List[str]):
+    def _generate_cleanup_report(self, errors: list[str]):
         """Generate a cleanup failure report with manual cleanup commands.
 
         Args:
@@ -204,8 +203,8 @@ class BaseRobotTest:
         self,
         scene: str,
         name: str,
-        setting_name: Optional[str] = None,
-        config: Optional[dict] = None,
+        setting_name: str | None = None,
+        config: dict | None = None,
     ) -> int:
         """Create a draft configuration and automatically track it for cleanup.
 
@@ -235,7 +234,7 @@ class BaseRobotTest:
         self._track_resource(self.RESOURCE_DRAFT, draft_id)
         return draft_id
 
-    def create_template(self, draft_id: int, name: Optional[str] = None) -> int:
+    def create_template(self, draft_id: int, name: str | None = None) -> int:
         """Create a template from a draft and automatically track it for cleanup.
 
         Args:
@@ -275,7 +274,7 @@ class BaseRobotTest:
         self._track_resource(self.RESOURCE_DRAFT, draft_id)
         return draft_id
 
-    def batch_create_drafts(self, drafts: List[dict]) -> List[int]:
+    def batch_create_drafts(self, drafts: list[dict]) -> list[int]:
         """Batch create drafts and automatically track them for cleanup.
 
         Args:

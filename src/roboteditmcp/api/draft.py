@@ -2,6 +2,8 @@
 
 import logging
 
+from pydantic import ValidationError
+
 from roboteditmcp.api.base import BaseAPI
 from roboteditmcp.models import ActionResult, BatchDraftResponse
 
@@ -33,7 +35,7 @@ class DraftAPI(BaseAPI):
             List of scene names (e.g., ["ROBOT", "LLM", "CHAIN"])
         """
         response = self.client.get(
-            f"{self.base_url}/factory/drafts/scenes",
+            f"{self.base_url}/factory/draft-scenes",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -49,29 +51,7 @@ class DraftAPI(BaseAPI):
             Dict with factory_names list
         """
         response = self.client.get(
-            f"{self.base_url}/factory/drafts/{scene}/factories",
-            headers=self._get_headers(),
-        )
-        return self._handle_response(response)
-
-    # ========================================
-    # Factory Structure
-    # ========================================
-
-    def get_draft_factory_struct(self, factoryName: str) -> dict:
-        """
-        Get draft factory structure definition.
-
-        Note: Only requires factoryName parameter, NOT scene!
-
-        Args:
-            factoryName: Factory name (e.g., "RobotBrainDraftSetting")
-
-        Returns:
-            DraftFactoryStructDto with config_schema and tfs_actions
-        """
-        response = self.client.get(
-            f"{self.base_url}/factory/drafts/struct/{factoryName}",
+            f"{self.base_url}/factory/drafts/scene/{scene}/factories",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -294,11 +274,12 @@ class DraftAPI(BaseAPI):
         setting_id: int,
         action: str,
         params: dict | None = None,
-    ) -> ActionResult:
+    ):
         """
         Trigger an action on a draft configuration.
 
         Note: Uses PUT method (not POST)
+        Note: Response can be a dict (ActionResult) or a list (raw data)
 
         Args:
             setting_id: Draft configuration ID
@@ -306,7 +287,7 @@ class DraftAPI(BaseAPI):
             params: Optional action parameters
 
         Returns:
-            ActionResult
+            ActionResult or raw action result (can be dict, list, or other types)
         """
         # Important: Always pass a dict, even if empty
         body = params if params is not None else {}
@@ -317,4 +298,13 @@ class DraftAPI(BaseAPI):
             json=body,
         )
         data = self._handle_response(response)
-        return ActionResult(**data)
+
+        # Try to parse as ActionResult if it's a dict
+        if isinstance(data, dict):
+            try:
+                return ActionResult(**data)
+            except (TypeError, ValidationError):
+                # If it doesn't match ActionResult structure, return as-is
+                return data
+        # Return as-is if it's not a dict (e.g., list, string, etc.)
+        return data

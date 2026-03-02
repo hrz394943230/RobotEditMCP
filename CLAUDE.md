@@ -79,13 +79,12 @@ make test            # 运行 pytest（目前还没有测试）
 - 可选变量：`ROBOT_LOG_LEVEL`、`API_TIMEOUT`、`MAX_CONNECTIONS`
 - `TF_NAMESPACE` 和 `TF_ROBOT_ID` 用于 Kubernetes 网络层的 Pod 定位和路由
 
-### 工具类别（共 20 个工具）
+### 工具类别（共 19 个工具）
 
-**草稿配置（9 个工具）**
+**草稿配置（8 个工具）**
 - `list_drafts`、`get_draft`、`create_draft`、`update_draft`、`delete_draft`
 - `batch_create_drafts` - 通过 temp_id 支持内部引用
 - `release_draft` - 将所有草稿发布到生产环境（不是单个草稿）
-- `get_factory_struct` - 返回 config_schema 和 tfs_actions
 - `trigger_draft_action` - 在草稿上执行操作
 
 **在线配置（4 个工具）**

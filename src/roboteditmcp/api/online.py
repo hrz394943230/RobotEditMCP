@@ -2,6 +2,8 @@
 
 import logging
 
+from pydantic import ValidationError
+
 from roboteditmcp.api.base import BaseAPI
 from roboteditmcp.models import ActionResult
 
@@ -46,7 +48,7 @@ class OnlineAPI(BaseAPI):
             Dict with factory_names list
         """
         response = self.client.get(
-            f"{self.base_url}/factory/online/{scene}/factories",
+            f"{self.base_url}/factory/online/scene/{scene}/factories",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -58,8 +60,8 @@ class OnlineAPI(BaseAPI):
         Note: Requires both scene and factoryName parameters!
 
         Args:
-            scene: Scene type (e.g., "ROBOT")
-            factoryName: Factory name (e.g., "RobotBrainOnlineSetting")
+            scene: Scene type (e.g., "ROBOT", "DOC_STORE")
+            factoryName: Factory name (e.g., "RobotBrainOnlineSetting", "PostgresDocStoreOnline")
 
         Returns:
             OnlineFactoryStructDto with config_schema and tfs_actions
@@ -148,9 +150,11 @@ class OnlineAPI(BaseAPI):
         setting_id: int,
         action: str,
         params: dict | None = None,
-    ) -> ActionResult:
+    ):
         """
         Trigger an action on an online configuration.
+
+        Note: Response can be a dict (ActionResult) or a list (raw data)
 
         Args:
             setting_id: Online configuration ID
@@ -158,7 +162,7 @@ class OnlineAPI(BaseAPI):
             params: Optional action parameters
 
         Returns:
-            ActionResult
+            ActionResult or raw action result (can be dict, list, or other types)
         """
         # Backend uses PUT method with params as body
         # Important: Always pass a dict, even if empty (not None)
@@ -170,4 +174,13 @@ class OnlineAPI(BaseAPI):
             json=payload,
         )
         data = self._handle_response(response)
-        return ActionResult(**data)
+
+        # Try to parse as ActionResult if it's a dict
+        if isinstance(data, dict):
+            try:
+                return ActionResult(**data)
+            except (TypeError, ValidationError):
+                # If it doesn't match ActionResult structure, return as-is
+                return data
+        # Return as-is if it's not a dict (e.g., list, string, etc.)
+        return data

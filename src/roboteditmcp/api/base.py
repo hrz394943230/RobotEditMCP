@@ -71,7 +71,7 @@ class BaseAPI:
             "tfRobotId": config.TF_ROBOT_ID,
         }
 
-    def _handle_response(self, response: httpx.Response) -> dict:
+    def _handle_response(self, response: httpx.Response):
         """
         Handle API response and extract data.
 
@@ -79,7 +79,7 @@ class BaseAPI:
             response: HTTP response object
 
         Returns:
-            Response data
+            Response data (can be dict, list, or other types)
 
         Raises:
             RobotAPIError: If API returns an error

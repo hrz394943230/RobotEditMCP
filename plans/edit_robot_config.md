@@ -148,21 +148,7 @@ admin_key: {ROBOT_ADMIN_TOKEN}
 
 **重要**：这不是发布单个草稿，而是发布整个草稿环境！
 
-#### 8. `get_factory_struct`
-获取特定场景和工厂类型的结构信息。
-
-**参数**：
-- `scene` (必需): 场景类型
-- `factoryName` (必需): 工厂名称
-
-**返回**：`{code, message, data: DraftFactoryStructDto}`
-
-**说明**：
-- 返回工厂的结构信息，包括 `config_schema` 和 `tfs_actions`
-- `tfs_actions` 包含该工厂类型支持的所有操作及元数据
-- 适用于了解某个工厂类型的功能而不需要具体配置实例
-
-#### 9. `trigger_draft_action`
+#### 8. `trigger_draft_action`
 触发草稿的操作。
 
 **参数**：
@@ -386,7 +372,6 @@ def _filter_dto(dto: DraftFactorySettingDto, verbose: bool = False) -> dict:
 ### 4. Schema 按需获取
 
 - `get_draft` 返回的 DTO 始终包含 `config_schema`
-- 如需了解工厂类型而不需要具体实例，使用 `get_factory_struct(scene, factoryName)`
 
 ---
 
@@ -440,7 +425,6 @@ def _filter_dto(dto: DraftFactorySettingDto, verbose: bool = False) -> dict:
 
 ### 新增工具
 
-- **get_factory_struct**：获取工厂类型结构信息（包含 schema 和 actions）
 - **get_online_action_detail**：获取单个 Action 的详细信息（仅 Online）
 
 ### 认证方式

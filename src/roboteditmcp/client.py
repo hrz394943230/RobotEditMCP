@@ -138,19 +138,6 @@ class RobotClient:
         """
         return self.draft.release_draft()
 
-    def get_factory_struct(self, factoryName: str) -> dict:
-        """Get draft factory structure information.
-
-        Note: Only requires factoryName parameter, NOT scene!
-
-        Args:
-            factoryName: Factory name (e.g., "RobotBrainDraftSetting")
-
-        Returns:
-            DraftFactoryStructDto with config_schema and tfs_actions
-        """
-        return self.draft.get_draft_factory_struct(factoryName)
-
     def trigger_draft_action(
         self,
         setting_id: int,

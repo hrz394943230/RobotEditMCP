@@ -46,7 +46,7 @@ class TemplateAPI(BaseAPI):
             Dict with factory_names list
         """
         response = self.client.get(
-            f"{self.base_url}/factory/templates/{scene}/factories",
+            f"{self.base_url}/factory/templates/scene/{scene}/factories",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -65,7 +65,7 @@ class TemplateAPI(BaseAPI):
             TemplateFactoryStructDto with config_schema (no tfs_actions)
         """
         response = self.client.get(
-            f"{self.base_url}/factory/templates/struct/{scene}/{factoryName}",
+            f"{self.base_url}/factory/template/struct/{scene}/{factoryName}",
             headers=self._get_headers(),
         )
         return self._handle_response(response)
@@ -97,7 +97,7 @@ class TemplateAPI(BaseAPI):
         Returns:
             TemplateListResponse with templates and total count
         """
-        params = {"page": page, "pageSize": pageSize}
+        params: dict[str, str | int] = {"page": page, "pageSize": pageSize}
         if scene:
             params["scene"] = scene
         if factoryName:

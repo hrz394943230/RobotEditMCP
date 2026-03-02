@@ -69,10 +69,9 @@ class RobotEditMCPServer:
             try:
                 # Route to appropriate handler based on tool category
                 tool_categories = {
-                    # Draft tools (12 tools)
+                    # Draft tools (11 tools)
                     "draft_get_scenes": handle_draft_tool,
                     "draft_get_factories": handle_draft_tool,
-                    "draft_get_factory_struct": handle_draft_tool,
                     "draft_list": handle_draft_tool,
                     "draft_get": handle_draft_tool,
                     "draft_create": handle_draft_tool,

@@ -124,12 +124,11 @@ Add to your Claude Desktop config or MCP client configuration:
 5. **delete_draft** - Delete a draft configuration
 6. **batch_create_drafts** - Batch create with internal references
 7. **release_draft** - Release all drafts to production
-8. **get_factory_struct** - Get factory structure information
-9. **trigger_draft_action** - Trigger an action on a draft
+8. **trigger_draft_action** - Trigger an action on a draft
 
 ### Online Configuration (4 tools)
 
-10. **list_online_configs** - List production environment configs
+9. **list_online_configs** - List production environment configs
 11. **get_online_config** - Get online configuration details
 12. **get_online_action_detail** - Get action details (Online only)
 13. **trigger_online_action** - Trigger an action (supports async)
@@ -159,10 +158,6 @@ scenes = list_scenes()
 # 2. List factories for a scene
 factories = list_factories(scene="ROBOT", type="draft")
 # Returns: {factory_names: ["RobotBrainDraftSetting", ...]}
-
-# 3. Get factory structure
-struct = get_factory_struct(scene="ROBOT", factoryName="RobotBrainDraftSetting")
-# Returns: {config_schema: {...}, tfs_actions: [...]}
 ```
 
 ### Creating a Configuration

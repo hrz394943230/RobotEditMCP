@@ -12,14 +12,15 @@
     - 测试完成后可以手动清理或保留供后续测试使用
 """
 
-import sys
 import os
+import sys
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from roboteditmcp.client import RobotClient
 import logging
+
+from roboteditmcp.client import RobotClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -186,7 +187,7 @@ def create_online_config():
             if doc_store_id:
                 client.draft.delete_draft(doc_store_id)
             logger.info("  清理完成")
-        except:
+        except Exception:
             pass
         return None
 

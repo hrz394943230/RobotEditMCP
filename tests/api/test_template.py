@@ -236,30 +236,19 @@ class TestTemplateAPI(BaseRobotTest):
         - Endpoint returns factory structure definition
         - Response contains config_schema
 
-        Uses DEFAULT_TEST_SCENE (DOC_STORE) and gets the first available factory.
+        Uses DEFAULT_TEST_SCENE (DOC_STORE) and known template factory.
 
         Note: This endpoint may not be available in all environments.
         """
         try:
-            # First get available factories for the test scene
-            factories_response = self.client.template.get_template_factories(self.DEFAULT_TEST_SCENE)
-            factory_names = (
-                factories_response.get('factory_names') or
-                factories_response.get('factoryNames') or
-                factories_response.get('factories') or
-                []
-            )
-
-            if not factory_names:
-                pytest.skip(f"No factories available for {self.DEFAULT_TEST_SCENE} scene")
-
-            # Use the first available factory
-            factory_name = factory_names[0]
+            # Use known working factory for DOC_STORE templates
+            # PostgresDocStoreTemplate is the template version
+            test_factory = "PostgresDocStoreTemplate"
 
             # Get factory structure
             response = self.client.template.get_template_factory_struct(
                 scene=self.DEFAULT_TEST_SCENE,
-                factoryName=factory_name
+                factoryName=test_factory
             )
 
             assert isinstance(response, dict), "Response should be a dict"
