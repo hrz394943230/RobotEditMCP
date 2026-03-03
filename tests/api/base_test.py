@@ -533,6 +533,80 @@ class BaseRobotTest:
 
         return draft_ids
 
+    # ===== Environment Setup Methods =====
+
+    def setup_environment(self, config_name: str, **kwargs) -> dict:
+        """Set up test environment based on standard configuration sets.
+
+        Args:
+            config_name: Name of the configuration template:
+                - "minimal_robot": Minimal ROBOT configuration
+                - "robot_with_memory": ROBOT with MEMORY support
+                - "action_test_set": PROMPT_TEMPLATE + DOC_STORE for action testing
+                - "batch_ref_chain": Complete ROBOT with DCChain
+            **kwargs: Variables for template substitution (e.g., setting_name, test_name)
+
+        Returns:
+            Dictionary with created resource IDs
+
+        Raises:
+            FileNotFoundError: If template file not found
+            Exception: If environment setup fails
+        """
+        from .test_helpers import TestEnvironmentHelper
+
+        # Get setting_name from kwargs or generate
+        setting_name = kwargs.get("setting_name", self._generate_resource_name(config_name))
+        kwargs["setting_name"] = setting_name
+
+        helper = TestEnvironmentHelper(self.client)
+
+        # Load the template
+        template = helper.load_template(config_name, **kwargs)
+
+        # Batch create all drafts
+        draft_ids = self.batch_create_drafts(template.get("drafts", []))
+
+        return {
+            "setting_name": setting_name,
+            "draft_ids": draft_ids,
+        }
+
+    def load_template(self, template_name: str, **kwargs) -> dict:
+        """Load and render a configuration template.
+
+        Args:
+            template_name: Name of the template file (without .json extension)
+            **kwargs: Variables for template substitution:
+                - setting_name: Configuration name (required)
+                - test_name: Test name (optional)
+
+        Returns:
+            Rendered template dictionary
+
+        Example:
+            template = self.load_template("action_test_set", setting_name="my_test")
+            draft_ids = self.batch_create_drafts(template["drafts"])
+        """
+        from .test_helpers import TestEnvironmentHelper
+
+        helper = TestEnvironmentHelper(self.client)
+        return helper.load_template(template_name, **kwargs)
+
+    def assert_environment_empty(self):
+        """Assert that the test environment has no drafts or templates.
+
+        Raises:
+            AssertionError: If environment is not empty
+
+        Example:
+            self.assert_environment_empty()  # Should not raise if environment is clean
+        """
+        from .test_helpers import TestEnvironmentHelper
+
+        helper = TestEnvironmentHelper(self.client)
+        helper.assert_environment_empty()
+
     # ===== Cleanup Methods =====
 
     def cleanup_all(self):

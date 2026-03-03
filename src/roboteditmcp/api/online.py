@@ -128,21 +128,31 @@ class OnlineAPI(BaseAPI):
     # Action Operations
     # ========================================
 
-    def get_online_action_detail(self, setting_id: int, action: str) -> dict:
+    def get_online_action_detail(self, setting_id: int, action: str, category: str | None = None) -> dict:
         """
         Get detailed information about a specific action.
 
         Args:
             setting_id: Online configuration ID
             action: Action name
+            category: Optional category parameter ("pageable" or "graphical")
 
         Returns:
             OnlineActionDetailDto
         """
-        response = self.client.get(
-            f"{self.base_url}/factory/online/{setting_id}/action/{action}/detail",
-            headers=self._get_headers(),
-        )
+        # Try POST method with category in body (if category provided)
+        if category:
+            response = self.client.post(
+                f"{self.base_url}/factory/online/{setting_id}/action/{action}/detail",
+                headers=self._get_headers(),
+                json={"category": category}
+            )
+        else:
+            # Try GET method without category
+            response = self.client.get(
+                f"{self.base_url}/factory/online/{setting_id}/action/{action}/detail",
+                headers=self._get_headers(),
+            )
         return self._handle_response(response)
 
     def trigger_online_action(
