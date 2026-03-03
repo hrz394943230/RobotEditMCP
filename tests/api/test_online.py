@@ -416,72 +416,132 @@ class TestOnlineAPI(BaseRobotTest):
         logger.info(f"get_platforms returned {len(response)} platforms")
 
     def test_trigger_online_action_drive(self):
-        """Test PUT /factory/online/:settingId/action/:action - Trigger DRIVE action.
+        """Test PUT /factory/online/:settingId/action/:action - Trigger DRIVE action with proper Robot config.
 
         Verifies:
-        - Endpoint triggers action on DRIVE configuration
-        - Action execution (or proper error handling for runtime issues)
+        - Batch create multiple interdependent drafts (ROBOT, DRIVE, BRAIN, MEMORY, LLM, etc.)
+        - Release drafts to online environment
+        - DRIVE action works correctly with proper Robot initialization
+        - get_all_tools_name action returns tool list
 
-        Uses existing DRIVE configuration with get_all_tools_name action.
+        Uses verified robot configuration from 机器人配置json.txt.
 
-        Note: This test may be skipped if DRIVE service is not properly initialized.
-        The error "无法获取 Drive 实时状态" indicates DRIVE service runtime issues,
-        which is an environment limitation, not a code issue.
+        Test Flow:
+        1. Batch create all required drafts
+        2. Release to online
+        3. Find the created DRIVE config
+        4. Trigger get_all_tools_name action
+        5. Verify tool list is returned
 
         Note: If SKIP_ONLINE_TESTS is set, this test will be skipped.
+        Note: This test may be skipped if ApiFox configs already exist (duplicate config error).
         """
         if SKIP_ONLINE_TESTS:
             pytest.skip("Online tests skipped via SKIP_ONLINE_TESTS environment variable")
 
-        # Find DRIVE config which has get_all_tools_name action
-        all_configs = self.client.online.list_online_configs()
-
-        # Manually filter for DRIVE configs
-        drive_configs = [c for c in all_configs if c.get('scene') == 'DRIVE']
-
-        if not drive_configs:
-            pytest.skip("No DRIVE online configurations available")
-
-        # Find one with get_all_tools_name action
-        config = None
-        for cfg in drive_configs:
-            tfs_actions = (cfg.get('tfsActions') or cfg.get('tfs_actions', {}))
-            if tfs_actions and 'get_all_tools_name' in tfs_actions:
-                config = cfg
-                break
-
-        if not config:
-            pytest.skip("No DRIVE config with get_all_tools_name action found")
-
-        config_id = config.get('settingId') or config.get('setting_id') or config.get('id')
-
-        # Trigger the get_all_tools_name action (no parameters needed)
-        action_name = "get_all_tools_name"
+        # Load verified robot configuration
+        import json
+        config_file = "/Users/huruize/PycharmProjects/RobotEditMCP/机器人配置json.txt"
 
         try:
-            response = self.client.online.trigger_online_action(
-                setting_id=config_id,
-                action=action_name,
-                params={}  # get_all_tools_name doesn't require parameters
-            )
+            with open(config_file) as f:
+                robot_config = json.load(f)
+        except FileNotFoundError:
+            pytest.skip(f"Robot configuration file not found: {config_file}")
 
-            # Verify the result
-            # The action returns a list of tool names: ["tool1", "tool2", ...]
-            assert response is not None, "Response should not be None"
-            assert isinstance(response, list), f"get_all_tools_name should return a list, got {type(response)}"
-            logger.info(f"get_all_tools_name returned {len(response)} tool names")
+        drafts_data = robot_config.get('drafts', [])
 
+        # Step 1: Batch create drafts
+        try:
+            batch_result = self.client.draft.batch_create_drafts(drafts_data)
         except Exception as e:
             error_str = str(e)
-            # Check for DRIVE runtime error
-            # Root cause: Robot initialization failed due to Brain configuration validation error
-            # See: docs/drive_action_error_analysis.md
-            if ("无法获取 Drive 实时状态" in error_str or
-                "机器人无法初始化" in error_str or
-                "RuntimeError" in error_str and "Drive" in error_str):
+            # Check for duplicate config error
+            if "Config duplicate" in error_str or "草稿配置名称重复" in error_str:
                 pytest.skip(
-                    f"DRIVE service error - Robot initialization failed (environment limitation): {error_str[:150]}"
+                    "ApiFox configs already exist from previous test run. "
+                    "Please manually delete them or use a different configuration."
                 )
-            else:
-                # Re-raise unexpected exceptions
-                raise
+            raise
+
+        # Verify batch creation success
+        assert batch_result.success_count > 0, "At least some drafts should be created"
+
+        # Track created draft IDs for cleanup
+        created_draft_ids = []
+        for draft_result in batch_result.results:
+            if draft_result.success and draft_result.setting_id:
+                created_draft_ids.append(draft_result.setting_id)
+
+        logger.info(f"Created {len(created_draft_ids)} drafts")
+
+        # Step 2: Release to online
+        import time
+        try:
+            release_result = self.client.draft.release_draft()
+        except Exception as e:
+            error_str = str(e)
+            # Check for duplicate or other config errors
+            if "Config duplicate" in error_str or "草稿配置名称重复" in error_str:
+                pytest.skip(
+                    "ApiFox configs already exist in online environment. "
+                    "Please manually delete them or use a different configuration."
+                )
+            raise
+
+        assert release_result is not None, "Release should return a result"
+        assert 'onlineRobotId' in release_result, "Release should return online robot ID"
+
+        robot_online_id = release_result['onlineRobotId']
+        logger.info(f"Released robot to online, robot_id: {robot_online_id}")
+
+        # Wait for release to propagate
+        time.sleep(5)
+
+        # Step 3: Find the created DRIVE config
+        # Look for "ApiFoxMarkI" which is tempId=4 in the config
+        online_configs = self.client.online.list_online_configs()
+
+        drive_config = None
+        for cfg in online_configs:
+            setting_name = cfg.get('settingName') or cfg.get('setting_name', '')
+            if setting_name == 'ApiFoxMarkI' and cfg.get('scene') == 'DRIVE':
+                drive_config = cfg
+                break
+
+        if not drive_config:
+            pytest.skip("Could not find ApiFoxMarkI DRIVE config after release")
+
+        drive_online_id = drive_config.get('settingId')
+        logger.info(f"Found DRIVE config: {drive_online_id}")
+
+        # Step 4: Verify DRIVE has actions
+        drive_detail = self.client.online.get_online_config(drive_online_id)
+        tfs_actions = (drive_detail.get('tfsActions') or drive_detail.get('tfs_actions', {}))
+
+        assert 'get_all_tools_name' in tfs_actions, "DRIVE should have get_all_tools_name action"
+
+        # Step 5: Trigger get_all_tools_name action
+        action_name = "get_all_tools_name"
+        response = self.client.online.trigger_online_action(
+            setting_id=drive_online_id,
+            action=action_name,
+            params={}
+        )
+
+        # Step 6: Verify response
+        assert response is not None, "Action should return a result"
+        assert isinstance(response, list), f"get_all_tools_name should return a list, got {type(response)}"
+
+        # The response should be a list of tool definitions
+        # Each tool should have at least 'name' and 'description'
+        if len(response) > 0:
+            first_tool = response[0]
+            assert isinstance(first_tool, dict), "Tool should be a dict"
+            assert 'name' in first_tool, "Tool should have 'name' field"
+            logger.info(f"get_all_tools_name returned {len(response)} tools")
+            logger.info(f"First tool: {first_tool.get('name')}")
+
+        # Note: Drafts cannot be deleted after release, so we skip cleanup
+        # They will remain in the system but should not interfere with other tests
+        logger.info("Test completed successfully. Created drafts remain in system (this is expected).")
