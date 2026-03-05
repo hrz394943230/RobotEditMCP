@@ -4,14 +4,15 @@ This module tests all 7 template-related MCP tools by mocking the API layer
 and verifying the tool handlers work correctly.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from roboteditmcp.client import RobotClient
 from roboteditmcp.tools.template import (
     handle_template_tool,
     register_template_tools,
 )
-from roboteditmcp.client import RobotClient
 
 
 class TestTemplateToolsRegistration:

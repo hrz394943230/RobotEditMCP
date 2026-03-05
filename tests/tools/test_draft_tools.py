@@ -4,11 +4,12 @@ This module tests all 12 draft-related MCP tools by mocking the API layer
 and verifying the tool handlers work correctly.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from roboteditmcp.tools.draft import handle_draft_tool, register_draft_tools
+import pytest
+
 from roboteditmcp.client import RobotClient
+from roboteditmcp.tools.draft import handle_draft_tool, register_draft_tools
 
 
 class TestDraftToolsRegistration:

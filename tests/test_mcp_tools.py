@@ -4,18 +4,18 @@ This module provides comprehensive testing of all 26 MCP tools by testing
 the tool handlers directly with mocked API clients.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from roboteditmcp.client import RobotClient
 from roboteditmcp.tools import (
+    handle_online_tool,
+    handle_template_tool,
     register_draft_tools,
     register_online_tools,
     register_template_tools,
-    handle_draft_tool,
-    handle_online_tool,
-    handle_template_tool,
 )
-from roboteditmcp.client import RobotClient
 
 
 class TestAllToolsRegistration:
@@ -79,7 +79,7 @@ class TestAllToolsRegistration:
             assert isinstance(tool.inputSchema, dict), f"Tool {tool.name} inputSchema must be dict"
 
             # Check non-empty
-            assert len(tool.name) > 0, f"Tool name cannot be empty"
+            assert len(tool.name) > 0, "Tool name cannot be empty"
             assert len(tool.description) > 10, f"Tool {tool.name} description too short"
 
 
@@ -200,7 +200,7 @@ class TestToolHandlerRouting:
                 await handle_draft_tool(tool_name, {}, client)
             except ValueError:
                 # This means the tool name is unknown - should not happen
-                raise AssertionError(f"Tool {tool_name} not routable")
+                raise AssertionError(f"Tool {tool_name} not routable") from None
             except (KeyError, TypeError):
                 # Expected - missing required parameters
                 pass
@@ -226,7 +226,7 @@ class TestToolHandlerRouting:
                 await handle_online_tool(tool_name, {}, client)
             except ValueError:
                 # This means the tool name is unknown - should not happen
-                raise AssertionError(f"Tool {tool_name} not routable")
+                raise AssertionError(f"Tool {tool_name} not routable") from None
             except (KeyError, TypeError):
                 # Expected - missing required parameters
                 pass
@@ -252,7 +252,7 @@ class TestToolHandlerRouting:
                 await handle_template_tool(tool_name, {}, client)
             except ValueError:
                 # This means the tool name is unknown - should not happen
-                raise AssertionError(f"Tool {tool_name} not routable")
+                raise AssertionError(f"Tool {tool_name} not routable") from None
             except (KeyError, TypeError):
                 # Expected - missing required parameters
                 pass

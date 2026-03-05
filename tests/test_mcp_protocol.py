@@ -35,12 +35,12 @@ class TestMCPEndpointStructure:
         - Tool count meets minimum requirements
         - Tools have proper structure
         """
+        from roboteditmcp.client import RobotClient
         from roboteditmcp.tools import (
             register_draft_tools,
             register_online_tools,
             register_template_tools,
         )
-        from roboteditmcp.client import RobotClient
 
         # Create a client and server instance
         client = RobotClient()
@@ -86,12 +86,12 @@ class TestMCPEndpointStructure:
             If a tool is renamed or removed, this test will fail. This is intentional
             to prevent breaking changes. Update CRITICAL_TOOLS if the change is deliberate.
         """
+        from roboteditmcp.client import RobotClient
         from roboteditmcp.tools import (
             register_draft_tools,
             register_online_tools,
             register_template_tools,
         )
-        from roboteditmcp.client import RobotClient
 
         # Critical tools that must always be available
         CRITICAL_TOOLS = [
@@ -146,12 +146,13 @@ class TestMCPEndpointStructure:
         - Names are lowercase with underscores
         """
         import re
+
+        from roboteditmcp.client import RobotClient
         from roboteditmcp.tools import (
             register_draft_tools,
             register_online_tools,
             register_template_tools,
         )
-        from roboteditmcp.client import RobotClient
 
         client = RobotClient()
         draft_tools = register_draft_tools(client)
@@ -183,12 +184,12 @@ class TestMCPEndpointStructure:
         - Each tool has a unique name
         - No name collisions across categories
         """
+        from roboteditmcp.client import RobotClient
         from roboteditmcp.tools import (
             register_draft_tools,
             register_online_tools,
             register_template_tools,
         )
-        from roboteditmcp.client import RobotClient
 
         client = RobotClient()
         draft_tools = register_draft_tools(client)
@@ -217,12 +218,12 @@ class TestMCPEndpointStructure:
         - Required fields are properly defined
         - Types are valid JSON Schema types
         """
+        from roboteditmcp.client import RobotClient
         from roboteditmcp.tools import (
             register_draft_tools,
             register_online_tools,
             register_template_tools,
         )
-        from roboteditmcp.client import RobotClient
 
         client = RobotClient()
         draft_tools = register_draft_tools(client)

@@ -4,11 +4,12 @@ This module tests all 7 online-related MCP tools by mocking the API layer
 and verifying the tool handlers work correctly.
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from roboteditmcp.tools.online import handle_online_tool, register_online_tools
+import pytest
+
 from roboteditmcp.client import RobotClient
+from roboteditmcp.tools.online import handle_online_tool, register_online_tools
 
 
 class TestOnlineToolsRegistration:
