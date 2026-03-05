@@ -1,0 +1,54 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 触发条件：推送以 v 开头的版本标签，例如 v0.1.0
+
+permissions:
+  contents: read
+  id-token: write  # 必需：用于 PyPI 的 OIDC 认证
+
+jobs:
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/roboteditmcp
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run lint
+        run: make lint
+
+      - name: Run tests
+        env:
+          ROBOT_ADMIN_TOKEN: ${{ secrets.ROBOT_ADMIN_TOKEN }}
+          ROBOT_BASE_URL: ${{ secrets.ROBOT_BASE_URL }}
+          TF_NAMESPACE: ${{ secrets.TF_NAMESPACE }}
+          TF_ROBOT_ID: ${{ secrets.TF_ROBOT_ID }}
+        run: make test
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true  # 如果版本已存在则跳过
+          verbose: true

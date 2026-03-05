@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format check-fmt clean test run
+.PHONY: help install dev lint format check-fmt clean test run build publish
 
 # Default target
 help:
@@ -11,6 +11,8 @@ help:
 	@echo "  make clean       - Clean up cache files"
 	@echo "  make test        - Run tests"
 	@echo "  make run         - Run the MCP server"
+	@echo "  make build       - Build distribution packages"
+	@echo "  make publish     - Publish to PyPI (requires API token)"
 
 # Install dependencies
 install:
@@ -59,3 +61,20 @@ test:
 run:
 	@echo "Starting MCP server..."
 	uv run roboteditmcp
+
+# Build distribution packages
+build:
+	@echo "Building distribution packages..."
+	uv build
+
+# Publish to PyPI (requires TWINE_USERNAME and TWINE_PASSWORD)
+publish:
+	@echo "Publishing to PyPI..."
+	uv run twine upload dist/*
+
+# Create a git tag and push (triggers GitHub Actions publish)
+tag:
+	@echo "Creating and pushing git tag..."
+	@read -p "Enter version (e.g., v0.1.1): " version; \
+	git tag -a "$$version" -m "Release $$version"; \
+	git push origin $$version

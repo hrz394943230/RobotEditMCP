@@ -1,0 +1,8 @@
+include README.md
+include LICENSE
+include pyproject.toml
+recursive-include src/roboteditmcp *.py
+recursive-include src/roboteditmcp/tools *.py
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .git*
