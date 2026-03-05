@@ -51,8 +51,8 @@ class TestMCPEndpointStructure:
         all_tools = draft_tools + online_tools + template_tools
 
         # Verify tool count
-        assert len(all_tools) >= 20, (
-            f"Expected at least 20 tools, got {len(all_tools)}. "
+        assert len(all_tools) >= 25, (
+            f"Expected at least 25 tools, got {len(all_tools)}. "
             "If tool count changed intentionally, update this test."
         )
 
