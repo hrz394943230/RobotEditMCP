@@ -429,7 +429,7 @@ class TestOnlineAPI(BaseRobotTest):
         assert len(full_tfs_actions) > 0, "Full config should have tfs_actions"
         assert 'get_platforms' in full_tfs_actions, "Full config should have get_platforms"
 
-        logger.info(f"✓ Successfully retrieved action metadata from online configuration")
+        logger.info("✓ Successfully retrieved action metadata from online configuration")
 
     def test_trigger_online_action(self):
         """Test PUT /factory/online/:settingId/action/:action - Trigger action.

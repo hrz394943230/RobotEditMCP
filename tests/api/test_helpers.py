@@ -59,7 +59,7 @@ class TestEnvironmentHelper:
             except Exception as e:
                 error_msg = f"Failed to delete draft id={draft_id}: {e}"
                 logger.error(error_msg)
-                raise Exception(error_msg)
+                raise Exception(error_msg) from e
 
         elapsed = time.time() - start_time
         logger.info(f"Cleared {deleted_count} draft(s) in {elapsed:.2f}s")
@@ -103,7 +103,7 @@ class TestEnvironmentHelper:
             except Exception as e:
                 error_msg = f"Failed to delete template id={template_id}: {e}"
                 logger.error(error_msg)
-                raise Exception(error_msg)
+                raise Exception(error_msg) from e
 
         elapsed = time.time() - start_time
         logger.info(f"Cleared {deleted_count} template(s) in {elapsed:.2f}s")
@@ -242,7 +242,7 @@ class TestEnvironmentHelper:
         try:
             return json.loads(template_content)
         except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse template {template_name}: {e}")
+            raise Exception(f"Failed to parse template {template_name}: {e}") from e
 
     def assert_environment_empty(self) -> None:
         """Assert that the environment has no drafts or templates.

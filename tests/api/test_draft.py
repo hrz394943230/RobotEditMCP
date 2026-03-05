@@ -6,8 +6,6 @@ Each test creates its own test data and cleans up after itself.
 
 import logging
 
-import pytest
-
 from .base_test import BaseRobotTest
 
 logger = logging.getLogger(__name__)
