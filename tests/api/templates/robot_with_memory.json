@@ -1,0 +1,160 @@
+{
+  "drafts": [
+    {
+      "tempId": -1,
+      "draft": {
+        "name": "PostgresDocStoreDraft",
+        "scene": "DOC_STORE",
+        "settingName": "{{setting_name}}_doc_store",
+        "config": {
+          "name": "TestDocStore",
+          "description": "Robot with memory document store"
+        }
+      }
+    },
+    {
+      "tempId": -2,
+      "draft": {
+        "name": "PGInjectedConversationManagerDraftSetting",
+        "scene": "CONVERSATION_MANAGER",
+        "settingName": "{{setting_name}}_conv_mgr",
+        "config": {
+          "platform_id": 1
+        }
+      }
+    },
+    {
+      "tempId": -3,
+      "draft": {
+        "name": "AIMemoryDraftSetting",
+        "scene": "MEMORY",
+        "settingName": "{{setting_name}}_memory",
+        "config": {
+          "docs": {
+            "setting_id": -1,
+            "category": "Draft"
+          },
+          "conversation_manager": {
+            "setting_id": -2,
+            "category": "Draft"
+          },
+          "memos": null,
+          "knowledge": null,
+          "recall_strict": false,
+          "top_k": 20,
+          "kg_format": "tfrobot",
+          "enable_kg_query_expansion": true
+        }
+      }
+    },
+    {
+      "tempId": -4,
+      "draft": {
+        "name": "GPT草稿",
+        "scene": "LLM",
+        "settingName": "{{setting_name}}_llm",
+        "config": {
+          "input_price": 0,
+          "output_price": 0,
+          "name": "test-gpt-model",
+          "context_window": 4096,
+          "system_msg_prompt": [],
+          "before_input_msg_prompt": [],
+          "after_input_msg_prompt": [],
+          "after_intermediate_msg_prompt": [],
+          "tool_filter": null,
+          "frequency_penalty": 0,
+          "max_tokens": 1024,
+          "top_p": 1,
+          "n": 1,
+          "presence_penalty": 0,
+          "temperature": 0.7,
+          "openai_api_key": "test-key-not-used",
+          "proxy_host": null,
+          "proxy_port": null,
+          "response_format": {
+            "type": "text"
+          },
+          "stream": false
+        }
+      }
+    },
+    {
+      "tempId": -5,
+      "draft": {
+        "name": "ChainDraft",
+        "scene": "CHAIN",
+        "settingName": "{{setting_name}}_chain",
+        "config": {
+          "llm": {
+            "setting_id": -4,
+            "category": "Draft"
+          },
+          "max_iterations": 5,
+          "max_tokens": 4096,
+          "tool_response_instructions": "Stop when done.",
+          "enable_thinking": false,
+          "enable_test_mode": true
+        }
+      }
+    },
+    {
+      "tempId": -6,
+      "draft": {
+        "name": "RobotBrainDraftSetting",
+        "scene": "BRAIN",
+        "settingName": "{{setting_name}}_brain",
+        "config": {
+          "chain": {
+            "setting_id": -5,
+            "category": "Draft"
+          },
+          "memory": {
+            "setting_id": -3,
+            "category": "Draft"
+          },
+          "memory_chunk_size": 2048
+        }
+      }
+    },
+    {
+      "tempId": -7,
+      "draft": {
+        "name": "RobotMarkIDraftSetting",
+        "scene": "DRIVE",
+        "settingName": "{{setting_name}}_drive",
+        "config": {
+          "tool_set": [],
+          "exception_tips": {
+            "error_suffix": "Test error suffix",
+            "tool_not_found": "Test tool not found",
+            "extraction_error": "Test extraction error"
+          },
+          "dock_tools": [],
+          "top_k": 5
+        }
+      }
+    },
+    {
+      "tempId": -8,
+      "draft": {
+        "name": "RobotDraftSetting",
+        "scene": "ROBOT",
+        "settingName": "{{setting_name}}_robot",
+        "config": {
+          "nick_name": "TestRobotWithMemory",
+          "brain": {
+            "setting_id": -6,
+            "category": "Draft"
+          },
+          "drive": {
+            "setting_id": -7,
+            "category": "Draft"
+          },
+          "lock_timeout": 1800,
+          "wait_processing_timeout": 20
+        }
+      }
+    }
+  ]
+}

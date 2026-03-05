@@ -1,0 +1,39 @@
+{
+  "drafts": [
+    {
+      "tempId": -1,
+      "draft": {
+        "name": "FStrTemplateDraft",
+        "scene": "PROMPT_TEMPLATE",
+        "settingName": "{{setting_name}}_prompt_template",
+        "config": {
+          "templates": {
+            "zh": "你好吗{name}"
+          },
+          "active_language": "zh",
+          "params_schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["name"]
+          }
+        }
+      }
+    },
+    {
+      "tempId": -2,
+      "draft": {
+        "name": "PostgresDocStoreDraft",
+        "scene": "DOC_STORE",
+        "settingName": "{{setting_name}}_doc_store",
+        "config": {
+          "name": "TestDocStore",
+          "description": "For action testing"
+        }
+      }
+    }
+  ]
+}

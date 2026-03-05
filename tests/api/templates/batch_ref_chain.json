@@ -1,0 +1,244 @@
+{
+  "drafts": [
+    {
+      "tempId": -4,
+      "draft": {
+        "name": "PostgresDocStoreDraft",
+        "scene": "DOC_STORE",
+        "settingName": "{{setting_name}}_doc_store",
+        "config": {
+          "name": "{{setting_name}}DS",
+          "description": "文件管理中心"
+        }
+      }
+    },
+    {
+      "tempId": -3,
+      "draft": {
+        "name": "PGInjectedConversationManagerDraftSetting",
+        "scene": "CONVERSATION_MANAGER",
+        "settingName": "{{setting_name}}_conv_mgr",
+        "config": {
+          "platform_id": 1
+        }
+      }
+    },
+    {
+      "tempId": -2,
+      "draft": {
+        "name": "AIMemoryDraftSetting",
+        "scene": "MEMORY",
+        "settingName": "{{setting_name}}_memory",
+        "config": {
+          "docs": {
+            "setting_id": -4,
+            "category": "Draft"
+          },
+          "conversation_manager": {
+            "setting_id": -3,
+            "category": "Draft"
+          },
+          "memos": null,
+          "knowledge": null,
+          "recall_strict": false,
+          "top_k": 20,
+          "kg_format": "tfrobot",
+          "enable_kg_query_expansion": true
+        }
+      }
+    },
+    {
+      "tempId": -8,
+      "draft": {
+        "name": "FStrTemplateDraft",
+        "scene": "PROMPT_TEMPLATE",
+        "settingName": "{{setting_name}}_dcchain_template",
+        "config": {
+          "templates": {
+            "zh": "测试模板"
+          },
+          "active_language": "zh",
+          "params_schema": null
+        }
+      }
+    },
+    {
+      "tempId": -7,
+      "draft": {
+        "name": "附加信息提示词草稿",
+        "scene": "PROMPT",
+        "settingName": "{{setting_name}}_dcchain_prompt",
+        "config": {
+          "template": {
+            "setting_id": -8,
+            "category": "Draft"
+          },
+          "tips": null,
+          "always_render": true
+        }
+      }
+    },
+    {
+      "tempId": -6,
+      "draft": {
+        "name": "FStrTemplateDraft",
+        "scene": "PROMPT_TEMPLATE",
+        "settingName": "{{setting_name}}_system_template",
+        "config": {
+          "templates": {
+            "zh": "系统提示词模板"
+          },
+          "active_language": "zh",
+          "params_schema": null
+        }
+      }
+    },
+    {
+      "tempId": -5,
+      "draft": {
+        "name": "附加信息提示词草稿",
+        "scene": "PROMPT",
+        "settingName": "{{setting_name}}_system_prompt",
+        "config": {
+          "template": {
+            "setting_id": -6,
+            "category": "Draft"
+          },
+          "tips": null,
+          "always_render": true
+        }
+      }
+    },
+    {
+      "tempId": -1,
+      "draft": {
+        "name": "GPT草稿",
+        "scene": "LLM",
+        "settingName": "{{setting_name}}_llm",
+        "config": {
+          "input_price": 0.1,
+          "output_price": 0,
+          "name": "test-gpt-model",
+          "context_window": 4096,
+          "system_msg_prompt": [
+            {
+              "setting_id": -5,
+              "category": "Draft"
+            }
+          ],
+          "before_input_msg_prompt": [],
+          "after_input_msg_prompt": [],
+          "after_intermediate_msg_prompt": [],
+          "tool_filter": null,
+          "frequency_penalty": 0,
+          "logit_bias": null,
+          "max_tokens": 1024,
+          "top_p": 1,
+          "n": 1,
+          "presence_penalty": 0,
+          "response_format": {
+            "type": "text"
+          },
+          "seed": null,
+          "stop": null,
+          "stream": false,
+          "temperature": 1,
+          "tool_choice": null,
+          "tool_params_strict": null,
+          "user": null,
+          "openai_api_key": "test-key-not-used",
+          "proxy_host": null,
+          "proxy_port": null,
+          "proxy_user": null,
+          "proxy_pass": null
+        }
+      }
+    },
+    {
+      "tempId": -9,
+      "draft": {
+        "name": "分治思维链草稿(DCChainDraft)",
+        "scene": "CHAIN",
+        "settingName": "{{setting_name}}_dcchain",
+        "config": {
+          "abilities_purpose": "专业文档审核管理员帮助用户审核,编辑文档",
+          "llm": {
+            "setting_id": -1,
+            "category": "Draft"
+          },
+          "max_iterations": 10,
+          "max_tokens": 128000,
+          "tool_response_instructions": "有些工具会以Iterator迭代器的形式持续返回，如果你已经解决完问题或者已经拿到自己需要的信息，可以调用Stop相关工具将其关闭",
+          "output_schema": null,
+          "split_subtask_llm": "chat::gpt::gpt-4o",
+          "split_subtask_prompt": [
+            {
+              "setting_id": -7,
+              "category": "Draft"
+            }
+          ],
+          "wrap_input_prompt": null,
+          "progress_tips_prompt": null
+        }
+      }
+    },
+    {
+      "tempId": -10,
+      "draft": {
+        "name": "RobotBrainDraftSetting",
+        "scene": "BRAIN",
+        "settingName": "{{setting_name}}_brain",
+        "config": {
+          "chain": {
+            "setting_id": -9,
+            "category": "Draft"
+          },
+          "memory": {
+            "setting_id": -2,
+            "category": "Draft"
+          },
+          "memory_chunk_size": 2048
+        }
+      }
+    },
+    {
+      "tempId": -11,
+      "draft": {
+        "name": "RobotMarkIDraftSetting",
+        "scene": "DRIVE",
+        "settingName": "{{setting_name}}_drive",
+        "config": {
+          "tool_set": [],
+          "exception_tips": {
+            "error_suffix": "测试错误后缀",
+            "tool_not_found": "未找到对应工具",
+            "extraction_error": "提取参数时出现错误"
+          },
+          "dock_tools": [],
+          "top_k": 5
+        }
+      }
+    },
+    {
+      "tempId": -12,
+      "draft": {
+        "name": "RobotDraftSetting",
+        "scene": "ROBOT",
+        "settingName": "{{setting_name}}_robot",
+        "config": {
+          "nick_name": "{{setting_name}}Tiny",
+          "brain": {
+            "setting_id": -10,
+            "category": "Draft"
+          },
+          "drive": {
+            "setting_id": -11,
+            "category": "Draft"
+          },
+          "lock_timeout": 1800,
+          "wait_processing_timeout": 20
+        }
+      }
+    }
+  ]
+}
