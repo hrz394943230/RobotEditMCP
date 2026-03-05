@@ -1,6 +1,6 @@
 [project]
 name = "roboteditmcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server for Robot configuration management - AI Agent tools for Robot draft/online/template configs"
 readme = "README.md"
 requires-python = ">=3.10"
